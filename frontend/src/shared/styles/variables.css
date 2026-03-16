@@ -1,0 +1,14 @@
+:root {
+    --bam-navy: #003366;
+    --bam-red: #e31837;
+    --bam-light: #f3f3f3;
+    --bam-dark: #111111;
+
+    /* Legacy spiritual variables mapping */
+    --spiritual-light: #f8fafc;
+    --spiritual-dark: #003366;
+    /* Mapping to BAM Navy for backwards compatibility */
+    --spiritual-accent: #e31837;
+    /* Mapping to BAM Red */
+    --spiritual-accent-hover: #c4122d;
+}

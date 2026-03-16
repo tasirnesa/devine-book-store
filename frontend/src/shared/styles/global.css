@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+    body {
+        @apply bg-spiritual-light text-spiritual-dark;
+        font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    }
+}
+
+@layer components {
+    .btn {
+        @apply px-4 py-2 rounded-lg font-medium transition-all active:scale-95;
+    }
+
+    .btn-primary {
+        @apply bg-spiritual-accent text-white hover:bg-opacity-90;
+    }
+
+    .card {
+        @apply bg-white rounded-xl shadow-md overflow-hidden hover:shadow-xl transition-shadow;
+    }
+}

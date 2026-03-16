@@ -1,0 +1,128 @@
+// This is the Prisma schema for the backend
+// Run: npx prisma migrate dev --name init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ── Languages ─────────────────────────────────────────────
+model Language {
+  id        Int               @id @default(autoincrement())
+  code      String            @unique   // "en", "ar", "am", "om"
+  name      String
+  direction String            @default("ltr") // "ltr" | "rtl"
+  isActive  Boolean           @default(true)
+  books     BookTranslation[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("languages")
+}
+
+// ── Books (language-agnostic base record) ─────────────────
+model Book {
+  id          Int               @id @default(autoincrement())
+  slug        String            @unique
+  coverUrl    String?
+  fileUrl     String?           // Path to uploaded PDF/ebook
+  externalUrl String?           // External link if not stored locally
+  featured    Boolean           @default(false)
+  views       Int               @default(0)
+  publishedAt DateTime?
+
+  translations BookTranslation[]
+
+  authorId Int?
+  author   Author? @relation(fields: [authorId], references: [id])
+
+  categories CategoryOnBook[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("books")
+}
+
+// ── Per-language book content ─────────────────────────────
+model BookTranslation {
+  id          Int    @id @default(autoincrement())
+  bookId      Int
+  languageId  Int
+  title       String
+  description String?
+  authorName  String?  // Transliterated author name in this language
+
+  book     Book     @relation(fields: [bookId],     references: [id], onDelete: Cascade)
+  language Language @relation(fields: [languageId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([bookId, languageId])   // One translation per language per book
+  @@map("book_translations")
+}
+
+// ── Authors ───────────────────────────────────────────────
+model Author {
+  id       Int     @id @default(autoincrement())
+  name     String
+  slug     String  @unique
+  bio      String?
+  photoUrl String?
+  books    Book[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("authors")
+}
+
+// ── Categories ────────────────────────────────────────────
+model Category {
+  id    Int    @id @default(autoincrement())
+  name  String
+  slug  String @unique
+  icon  String?
+  books CategoryOnBook[]
+
+  @@map("categories")
+}
+
+// ── Book ↔ Category (many-to-many) ───────────────────────
+model CategoryOnBook {
+  bookId     Int
+  categoryId Int
+
+  book     Book     @relation(fields: [bookId],     references: [id], onDelete: Cascade)
+  category Category @relation(fields: [categoryId], references: [id])
+
+  @@id([bookId, categoryId])
+  @@map("category_on_books")
+}
+
+// ── Users ─────────────────────────────────────────────────
+model User {
+  id                Int      @id @default(autoincrement())
+  name              String
+  email             String   @unique
+  password          String
+  role              Role     @default(USER)
+  preferredLanguage String   @default("en")
+  isActive          Boolean  @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("users")
+}
+
+enum Role {
+  USER
+  ADMIN
+}
