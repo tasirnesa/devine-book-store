@@ -28,8 +28,8 @@ router.get('/', bookController.getAllBooks);
 router.get('/:slug', bookController.getBookBySlug);
 
 // Admin-only routes
-router.post('/', protect, requireRole('admin'), upload.single('cover'), validate(createBookSchema), bookController.createBook);
-router.put('/:id', protect, requireRole('admin'), upload.single('cover'), validate(updateBookSchema), bookController.updateBook);
-router.delete('/:id', protect, requireRole('admin'), bookController.deleteBook);
+router.post('/', protect, requireRole('ADMIN'), upload.single('cover'), validate(createBookSchema), bookController.createBook);
+router.put('/:id', protect, requireRole('ADMIN'), upload.single('cover'), validate(updateBookSchema), bookController.updateBook);
+router.delete('/:id', protect, requireRole('ADMIN'), bookController.deleteBook);
 
 module.exports = router;

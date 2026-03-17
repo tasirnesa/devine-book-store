@@ -1,4 +1,5 @@
 const prisma = require('../config/prisma');
+const slugify = require('slugify');
 
 /**
  * Get all books with filtering and pagination
@@ -26,7 +27,7 @@ exports.getAllBooks = async ({ page = 1, pageSize = 20, language, category, sear
     if (search || language) {
         where.translations = {
             some: {
-                ...(language ? { language: { code: language } } : {}),
+                ...(language ? { language: { code: { startsWith: language.split('-')[0] } } } : {}),
                 ...(search ? {
                     OR: [
                         { title: { contains: search, mode: 'insensitive' } },
@@ -126,14 +127,18 @@ exports.incrementViews = async (id) => {
  * Create a book
  */
 exports.createBook = async (data, file) => {
-    const { translations, categories, ...rest } = data;
+    const { translations, categories, title, description, ...rest } = data;
+
+    // Generate slug if not provided
+    const finalSlug = rest.slug || slugify(title || (translations && translations[0]?.title) || 'book', { lower: true, strict: true });
 
     const book = await prisma.book.create({
         data: {
             ...rest,
+            slug: finalSlug,
             coverUrl: file ? `/uploads/covers/${file.filename}` : rest.coverUrl,
             translations: {
-                create: translations.map(t => ({
+                create: (translations || []).map(t => ({
                     languageId: t.languageId,
                     title: t.title,
                     description: t.description,
@@ -141,7 +146,7 @@ exports.createBook = async (data, file) => {
                 }))
             },
             categories: {
-                create: categories.map(catId => ({
+                create: (categories || []).map(catId => ({
                     categoryId: catId
                 }))
             }
@@ -152,14 +157,33 @@ exports.createBook = async (data, file) => {
         }
     });
 
-    return book;
+    // Format for frontend (matches getBooks logic)
+    const formattedBook = await prisma.book.findUnique({
+        where: { id: book.id },
+        include: {
+            translations: {
+                where: { language: { code: 'en' } },
+                take: 1
+            },
+            categories: {
+                include: { category: true }
+            }
+        }
+    });
+
+    if (formattedBook) {
+        formattedBook.activeTranslation = formattedBook.translations[0] || book.translations[0];
+        formattedBook.categories = formattedBook.categories.map(c => c.category);
+    }
+
+    return formattedBook || book;
 };
 
 /**
  * Update a book
  */
 exports.updateBook = async (id, data, file) => {
-    const { translations, categories, ...rest } = data;
+    const { translations, categories, title, description, ...rest } = data;
     const bookId = parseInt(id);
 
     // Update base fields
@@ -202,14 +226,34 @@ exports.updateBook = async (id, data, file) => {
     if (categories) {
         await prisma.categoryOnBook.deleteMany({ where: { bookId } });
         await prisma.categoryOnBook.createMany({
-            data: categories.map(catId => ({
+            data: (categories || []).map(catId => ({
                 bookId,
                 categoryId: catId
             }))
         });
     }
 
-    return exports.getBookBySlug(rest.slug || '', 'en');
+    // Return the updated book (fetch by ID to be safe)
+    const updatedBook = await prisma.book.findUnique({
+        where: { id: bookId },
+        include: {
+            translations: {
+                where: { language: { code: 'en' } },
+                take: 1
+            },
+            categories: {
+                include: { category: true }
+            }
+        }
+    });
+
+    // Format for frontend (matches getBooks logic)
+    if (updatedBook) {
+        updatedBook.activeTranslation = updatedBook.translations[0];
+        updatedBook.categories = updatedBook.categories.map(c => c.category);
+    }
+
+    return updatedBook;
 };
 
 /**

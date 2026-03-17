@@ -4,10 +4,12 @@ exports.createBookSchema = Joi.object({
     title: Joi.string().max(255).required(),
     slug: Joi.string().max(255).optional(),
     description: Joi.string().optional(),
-    coverUrl: Joi.string().uri().optional(),
+    coverUrl: Joi.string().optional(),
     fileUrl: Joi.string().optional(),
-    externalUrl: Joi.string().uri().optional(),
+    externalUrl: Joi.string().optional(),
     featured: Joi.boolean().optional(),
+    isbn: Joi.string().max(50).optional(),
+    quantity: Joi.number().integer().min(0).optional(),
     publishedAt: Joi.date().optional(),
     authorId: Joi.number().integer().optional(),
     translations: Joi.array().items(
@@ -18,15 +20,18 @@ exports.createBookSchema = Joi.object({
             authorName: Joi.string().optional(),
         })
     ).optional(),
+    categories: Joi.array().items(Joi.number().integer()).optional(),
 });
 
 exports.updateBookSchema = Joi.object({
     title: Joi.string().max(255).optional(),
     description: Joi.string().optional(),
-    coverUrl: Joi.string().uri().optional(),
+    coverUrl: Joi.string().optional(),
     fileUrl: Joi.string().optional(),
-    externalUrl: Joi.string().uri().optional(),
+    externalUrl: Joi.string().optional(),
     featured: Joi.boolean().optional(),
+    isbn: Joi.string().max(50).optional(),
+    quantity: Joi.number().integer().min(0).optional(),
     publishedAt: Joi.date().optional(),
     authorId: Joi.number().integer().optional(),
     translations: Joi.array().items(
@@ -37,4 +42,5 @@ exports.updateBookSchema = Joi.object({
             authorName: Joi.string().optional(),
         })
     ).optional(),
+    categories: Joi.array().items(Joi.number().integer()).optional(),
 });

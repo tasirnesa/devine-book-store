@@ -15,6 +15,10 @@ import ProfilePage from '../features/users/pages/ProfilePage';
 import AdminDashboardPage from '../features/admin/pages/AdminDashboardPage';
 import AdminBookListPage from '../features/admin/pages/AdminBookListPage';
 import AdminUserListPage from '../features/admin/pages/AdminUserListPage';
+import AdminBorrowPage from '../features/admin/pages/AdminBorrowPage';
+import AdminTaxonomyPage from '../features/admin/pages/AdminTaxonomyPage';
+import AdminReportsPage from '../features/admin/pages/AdminReportsPage';
+import AdminSettingsPage from '../features/admin/pages/AdminSettingsPage';
 import AddBookPage from '../features/books/pages/AddBookPage';
 
 const AppRoutes = () => {
@@ -24,7 +28,8 @@ const AppRoutes = () => {
             <Route element={<MainLayout />}>
                 <Route path="/" element={<Navigate to="/books" replace />} />
                 <Route path="/books" element={<BookListPage />} />
-                <Route path="/books/:id" element={<BookDetailsPage />} />
+                <Route path="/books/:slug" element={<BookDetailsPage />} />
+                <Route path="/saved" element={<div className="container mx-auto px-4 py-20 text-center text-bam-navy font-bold">Coming Soon: Your Sacred Collection</div>} />
                 <Route path="/login" element={<LoginPage />} />
                 <Route path="/register" element={<RegisterPage />} />
             </Route>
@@ -41,7 +46,11 @@ const AppRoutes = () => {
                     <Route path="books" element={<AdminBookListPage />} />
                     <Route path="books/add" element={<AddBookPage />} />
                     <Route path="books/edit/:id" element={<AddBookPage />} />
+                    <Route path="borrow" element={<AdminBorrowPage />} />
                     <Route path="users" element={<AdminUserListPage />} />
+                    <Route path="taxonomy" element={<AdminTaxonomyPage />} />
+                    <Route path="reports" element={<AdminReportsPage />} />
+                    <Route path="settings" element={<AdminSettingsPage />} />
                 </Route>
             </Route>
 

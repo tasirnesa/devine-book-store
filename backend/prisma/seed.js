@@ -1,8 +1,36 @@
+require('dotenv').config();
 const { PrismaClient } = require('@prisma/client');
+const bcrypt = require('bcryptjs');
 const prisma = new PrismaClient();
 
 async function main() {
     console.log('🌱 Starting database seeding...');
+
+    // 0. Users
+    const hashedPassword = await bcrypt.hash('password123', 12);
+    const users = [
+        {
+            name: 'Admin User',
+            email: 'admin@library.com',
+            password: hashedPassword,
+            role: 'ADMIN',
+        },
+        {
+            name: 'Soressa User',
+            email: 'soressa@gmail.com',
+            password: hashedPassword,
+            role: 'USER',
+        }
+    ];
+
+    for (const user of users) {
+        await prisma.user.upsert({
+            where: { email: user.email },
+            update: {},
+            create: user,
+        });
+    }
+    console.log('✅ Users seeded.');
 
     // 1. Languages
     const languages = [

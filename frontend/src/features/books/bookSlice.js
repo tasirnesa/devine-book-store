@@ -53,8 +53,8 @@ const bookSlice = createSlice({
             .addCase(fetchBooks.fulfilled, (state, action) => {
                 state.loading = false;
                 state.items = action.payload.data;
-                state.total = action.payload.total;
-                state.page = action.payload.page;
+                state.total = action.payload.pagination.total;
+                state.page = action.payload.pagination.page;
             })
             .addCase(fetchBooks.rejected, (state, action) => {
                 state.loading = false;

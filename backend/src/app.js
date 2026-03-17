@@ -18,7 +18,7 @@ app.use(helmet());
 app.use(cors({
     origin: env.frontendUrl,
     credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
 }));
 
 // Rate limiting — 100 requests per 15 min per IP

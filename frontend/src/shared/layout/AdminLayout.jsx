@@ -10,7 +10,10 @@ const AdminLayout = () => {
     const menuItems = [
         { path: '/admin', label: 'Dashboard', icon: LayoutDashboard },
         { path: '/admin/books', label: 'Manage Books', icon: Book },
-        { path: '/admin/users', label: 'Users', icon: Users },
+        { path: '/admin/borrow', label: 'Borrow & Return', icon: ChevronLeft },
+        { path: '/admin/users', label: 'Members', icon: Users },
+        { path: '/admin/taxonomy', label: 'Taxonomy', icon: LayoutDashboard },
+        { path: '/admin/reports', label: 'Reports', icon: LayoutDashboard },
         { path: '/admin/settings', label: 'Settings', icon: Settings },
     ];
 

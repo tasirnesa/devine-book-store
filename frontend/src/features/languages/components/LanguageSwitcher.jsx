@@ -18,14 +18,15 @@ const LanguageSwitcher = () => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
 
-    const currentLanguage = languages.find(l => l.code === i18n.language) || languages[0];
+    const currentLanguage = languages.find(l => l.code === i18n.language.split('-')[0]) || languages[0];
 
     const changeLanguage = (lng) => {
+        const baseLng = lng.split('-')[0];
         i18n.changeLanguage(lng);
-        document.dir = lng === 'ar' ? 'rtl' : 'ltr';
+        document.dir = baseLng === 'ar' ? 'rtl' : 'ltr';
         
         // Sync with Redux filters to trigger book refetch
-        dispatch(setFilters({ language: lng }));
+        dispatch(setFilters({ language: baseLng }));
         setIsOpen(false);
     };
 
@@ -42,9 +43,10 @@ const LanguageSwitcher = () => {
 
     // Initial sync
     useEffect(() => {
-        if (filters.language !== i18n.language) {
-            dispatch(setFilters({ language: i18n.language }));
-            document.dir = i18n.language === 'ar' ? 'rtl' : 'ltr';
+        const baseLng = i18n.language.split('-')[0];
+        if (filters.language !== baseLng) {
+            dispatch(setFilters({ language: baseLng }));
+            document.dir = baseLng === 'ar' ? 'rtl' : 'ltr';
         }
     }, []);
 

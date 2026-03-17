@@ -1,12 +1,59 @@
-import React from 'react';
-import { useSelector } from 'react-redux';
+import React, { useState } from 'react';
+import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { User, BookOpen, Bookmark, Calendar, Settings, ShieldCheck, ArrowRight } from 'lucide-react';
-import { Link } from 'react-router-dom';
+import { User, BookOpen, Bookmark, Calendar, Settings, ShieldCheck, ArrowRight, LogOut, X, Save, Mail, Edit3 } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { logout, loadUser } from '../../auth/authSlice';
+import axiosInstance from '../../../shared/services/axiosInstance';
+import Loader from '../../../shared/components/Loader';
 
 const ProfilePage = () => {
     const { t } = useTranslation();
+    const dispatch = useDispatch();
+    const navigate = useNavigate();
     const { user } = useSelector((state) => state.auth);
+
+    const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
+    const [formData, setFormData] = useState({
+        name: user?.name || '',
+        email: user?.email || '',
+        password: ''
+    });
+    const [error, setError] = useState('');
+
+    const handleLogout = () => {
+        dispatch(logout());
+        navigate('/login');
+    };
+
+    const handleEditClick = () => {
+        setFormData({
+            name: user?.name || '',
+            email: user?.email || '',
+            password: ''
+        });
+        setIsEditModalOpen(true);
+    };
+
+    const handleUpdate = async (e) => {
+        e.preventDefault();
+        setIsSaving(true);
+        setError('');
+        try {
+            const updateData = { name: formData.name, email: formData.email };
+            if (formData.password) updateData.password = formData.password;
+            
+            await axiosInstance.put(`/users/${user.id}`, updateData);
+            await dispatch(loadUser()).unwrap();
+            setIsEditModalOpen(false);
+        } catch (err) {
+            console.error('Update failed', err);
+            setError(err.response?.data?.message || 'Failed to update profile');
+        } finally {
+            setIsSaving(false);
+        }
+    };
 
     // Mock stats for aesthetic purposes
     const stats = [
@@ -48,7 +95,11 @@ const ProfilePage = () => {
                                         <Calendar size={14} className="text-bam-red" />
                                         {t('dashboard.joined')} {new Date(user?.createdAt || Date.now()).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
                                     </div>
-                                    <button className="flex items-center gap-2 px-6 py-2 bg-bam-red hover:bg-white hover:text-bam-red text-white rounded-full transition-all shadow-lg font-black text-xs uppercase tracking-widest">
+                                    <button 
+                                        onClick={handleEditClick}
+                                        className="flex items-center gap-2 px-6 py-2 bg-bam-red hover:bg-white hover:text-bam-red text-white rounded-full transition-all shadow-lg font-black text-xs uppercase tracking-widest"
+                                    >
+                                        <Edit3 size={14} />
                                         {t('common.edit_profile')}
                                     </button>
                                 </div>
@@ -61,7 +112,7 @@ const ProfilePage = () => {
                         {stats.map((stat, idx) => (
                             <div key={idx} className="bg-white p-8 rounded-3xl border border-gray-100 shadow-sm hover:shadow-xl transition-all duration-300 group">
                                 <div className="flex items-center justify-between mb-4">
-                                    <div className={`p-4 rounded-2xl bg-gray-50 group-hover:bg-bam-navy group-hover:text-white transition-colors ${stat.color}`}>
+                                    <div className={`p-4 rounded-2xl bg-gray-100 group-hover:bg-bam-navy group-hover:text-white transition-colors ${stat.color}`}>
                                         <stat.icon size={24} />
                                     </div>
                                     <span className="text-4xl font-black text-bam-navy tracking-tighter">
@@ -75,9 +126,8 @@ const ProfilePage = () => {
                         ))}
                     </div>
 
-                    {/* Activity Section Placeholder */}
+                    {/* Activity Section */}
                     <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                        {/* Reading List */}
                         <div className="lg:col-span-2 space-y-6">
                             <div className="flex justify-between items-center px-4">
                                 <h2 className="text-2xl font-serif font-black text-bam-navy">{t('nav.saved')}</h2>
@@ -100,12 +150,14 @@ const ProfilePage = () => {
                             </div>
                         </div>
 
-                        {/* Recent Activity / Settings */}
                         <div className="space-y-6">
                             <h2 className="text-2xl font-serif font-black text-bam-navy px-4">{t('dashboard.account')}</h2>
                             <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
                                 <div className="p-2">
-                                    <button className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 transition-colors group">
+                                    <button 
+                                        onClick={handleEditClick}
+                                        className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 transition-colors group"
+                                    >
                                         <div className="flex items-center gap-4">
                                             <div className="p-2 bg-gray-100 rounded-lg text-gray-400 group-hover:bg-bam-navy group-hover:text-white transition-colors">
                                                 <Settings size={20} />
@@ -116,12 +168,12 @@ const ProfilePage = () => {
                                     </button>
                                     <div className="h-px bg-gray-50 mx-4 my-1"></div>
                                     <button 
-                                        onClick={() => {/* Logout logic handled by Navbar or Profile context if needed */}}
-                                        className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-gray-50 transition-colors group text-bam-red"
+                                        onClick={handleLogout}
+                                        className="w-full flex items-center justify-between p-4 rounded-2xl hover:bg-red-50 transition-colors group text-bam-red"
                                     >
                                         <div className="flex items-center gap-4">
                                             <div className="p-2 bg-red-50 rounded-lg text-bam-red group-hover:bg-bam-red group-hover:text-white transition-colors">
-                                                <User size={20} strokeWidth={3} className="rotate-180" />
+                                                <LogOut size={20} strokeWidth={3} />
                                             </div>
                                             <span className="font-bold">{t('common.sign_out')}</span>
                                         </div>
@@ -132,6 +184,85 @@ const ProfilePage = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Edit Profile Modal */}
+            {isEditModalOpen && (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center p-4">
+                    <div className="absolute inset-0 bg-bam-navy/60 backdrop-blur-sm animate-in fade-in" onClick={() => setIsEditModalOpen(false)}></div>
+                    <div className="relative w-full max-w-md bg-white rounded-[2.5rem] shadow-2xl animate-in zoom-in duration-300 overflow-hidden">
+                        <div className="p-8 border-b border-gray-100 flex items-center justify-between">
+                            <h2 className="text-2xl font-serif font-black text-bam-navy italic">{t('common.edit_profile')}</h2>
+                            <button onClick={() => setIsEditModalOpen(false)} className="p-3 bg-gray-50 rounded-2xl text-gray-400 hover:text-bam-red transition-colors">
+                                <X size={20} />
+                            </button>
+                        </div>
+                        
+                        <form onSubmit={handleUpdate} className="p-8 space-y-6">
+                            {error && (
+                                <div className="p-4 bg-red-50 text-bam-red text-xs font-bold rounded-xl border border-red-100">
+                                    {error}
+                                </div>
+                            )}
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Name</label>
+                                <div className="relative">
+                                    <User className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+                                    <input
+                                        required
+                                        className="w-full bg-gray-50 border-none rounded-2xl py-4 pl-12 pr-6 text-sm font-bold text-bam-navy focus:ring-2 focus:ring-bam-navy/5"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({...formData, name: e.target.value})}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">Email Address</label>
+                                <div className="relative">
+                                    <Mail className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+                                    <input
+                                        required
+                                        type="email"
+                                        className="w-full bg-gray-50 border-none rounded-2xl py-4 pl-12 pr-6 text-sm font-bold text-bam-navy focus:ring-2 focus:ring-bam-navy/5"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({...formData, email: e.target.value})}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="space-y-2">
+                                <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest ml-2">New Password (optional)</label>
+                                <div className="relative">
+                                    <Settings className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" size={18} />
+                                    <input
+                                        type="password"
+                                        placeholder="Leave blank to keep current"
+                                        className="w-full bg-gray-50 border-none rounded-2xl py-4 pl-12 pr-6 text-sm font-bold text-bam-navy focus:ring-2 focus:ring-bam-navy/5"
+                                        value={formData.password}
+                                        onChange={(e) => setFormData({...formData, password: e.target.value})}
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="pt-4">
+                                <button
+                                    type="submit"
+                                    disabled={isSaving}
+                                    className="w-full bg-bam-navy text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.3em] shadow-2xl shadow-blue-200 hover:bg-bam-red transition-all flex items-center justify-center gap-3"
+                                >
+                                    {isSaving ? <Loader /> : (
+                                        <>
+                                            <Save size={18} />
+                                            Update Profile
+                                        </>
+                                    )}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };

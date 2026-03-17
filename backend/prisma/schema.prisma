@@ -35,6 +35,8 @@ model Book {
   featured    Boolean           @default(false)
   views       Int               @default(0)
   publishedAt DateTime?
+  isbn        String?           @unique
+  quantity    Int               @default(1)
 
   translations BookTranslation[]
 
@@ -42,6 +44,7 @@ model Book {
   author   Author? @relation(fields: [authorId], references: [id])
 
   categories CategoryOnBook[]
+  borrowings Borrowing[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -113,13 +116,51 @@ model User {
   email             String   @unique
   password          String
   role              Role     @default(USER)
+  phone             String?
   preferredLanguage String   @default("en")
   isActive          Boolean  @default(true)
+
+  borrowings        Borrowing[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
   @@map("users")
+}
+
+// ── Borrowing ─────────────────────────────────────────────
+model Borrowing {
+  id         Int             @id @default(autoincrement())
+  bookId     Int
+  userId     Int
+  issueDate  DateTime        @default(now())
+  dueDate    DateTime
+  returnDate DateTime?
+  status     BorrowingStatus @default(ISSUED)
+  fineAmount Float           @default(0)
+
+  book Book @relation(fields: [bookId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("borrowings")
+}
+
+enum BorrowingStatus {
+  ISSUED
+  RETURNED
+  OVERDUE
+}
+
+// ── Settings ──────────────────────────────────────────────
+model Setting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+
+  @@map("settings")
 }
 
 enum Role {

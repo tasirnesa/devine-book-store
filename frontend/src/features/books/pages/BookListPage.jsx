@@ -12,7 +12,7 @@ const BookListPage = () => {
     const { t } = useTranslation();
     const { items, loading, total, page, pageSize, filters } = useSelector((state) => state.books);
 
-    const isFiltered = filters.search || filters.category || filters.language;
+    const isFiltered = filters.search || filters.category;
 
     useEffect(() => {
         dispatch(fetchBooks({

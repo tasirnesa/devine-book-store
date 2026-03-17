@@ -8,7 +8,15 @@
         "by": "By",
         "edit_profile": "Edit Profile",
         "sign_out": "Sign Out",
-        "browse_all": "Browse All"
+        "browse_all": "Browse All",
+        "save_to_list": "Save to List",
+        "synopsis": "Sacred Synopsis",
+        "read_now": "Read Now",
+        "download_pdf": "Download PDF",
+        "view_external_source": "View External Source",
+        "content_unavailable": "Archives Unavailable",
+        "error_loading": "Failed to load spiritual wisdom",
+        "save": "Save"
     },
     "nav": {
         "books": "Books",

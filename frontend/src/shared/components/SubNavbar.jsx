@@ -3,9 +3,11 @@ import { useDispatch, useSelector } from 'react-redux';
 import { setFilters } from '../../features/books/bookSlice';
 import axiosInstance from '../services/axiosInstance';
 import { ChevronDown, Globe } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
 const SubNavbar = () => {
     const dispatch = useDispatch();
+    const navigate = useNavigate();
     const { filters } = useSelector((state) => state.books);
     const { items: languages } = useSelector((state) => state.languages);
     const [categories, setCategories] = useState([]);
@@ -26,6 +28,7 @@ const SubNavbar = () => {
     const handleFilterChange = (type, value) => {
         dispatch(setFilters({ [type]: value }));
         setShowLangDropdown(false);
+        navigate('/books');
     };
 
     return (
