@@ -72,10 +72,10 @@ const LoginPage = () => {
                                 value={email}
                                 onChange={(e) => setEmail(e.target.value)}
                                 className="w-full bg-gray-50/50 border border-gray-100 rounded-2xl py-4 px-6 text-sm focus:outline-none focus:border-bam-red focus:bg-white transition-all shadow-inner placeholder:text-gray-300"
-                                placeholder="name@domain.com"
+                                placeholder="taye@gmail.com"
                             />
                         </div>
-                        
+
                         <div className="space-y-2">
                             <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest pl-4">
                                 Password
@@ -99,17 +99,26 @@ const LoginPage = () => {
                         </button>
                     </form>
 
-                    <div className="mt-12 text-center">
-                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">
+                    <div className="mt-12 text-center space-y-4">
+                        <p className="text-xs font-bold text-gray-400 uppercase tracking-widest">
                             First time here?
                         </p>
-                        <Link 
-                            to="/register" 
-                            className="inline-flex items-center gap-2 text-bam-red font-black text-xs uppercase tracking-widest hover:underline group"
+                        <Link
+                            to="/register"
+                            className="inline-flex items-center gap-2 text-bam-red font-black text-xs uppercase tracking-widest hover:underline group block"
                         >
                             {t('nav.register')}
                             <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
                         </Link>
+
+                        <div className="pt-4 border-t border-gray-50">
+                            <Link
+                                to="/books"
+                                className="text-[10px] font-black text-gray-300 uppercase tracking-widest hover:text-bam-navy transition-colors"
+                            >
+                                ← Back to Library
+                            </Link>
+                        </div>
                     </div>
                 </div>
             </div>

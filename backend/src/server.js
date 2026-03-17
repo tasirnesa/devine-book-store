@@ -5,6 +5,7 @@ const app = require('./app');
 const { sequelize } = require('./config/db');
 const path = require('path');
 const fs = require('fs');
+const { initCronJobs } = require('./services/cron.service');
 
 // Ensure upload directories exist
 const uploadDirs = ['covers', 'files'].map((d) =>
@@ -21,10 +22,12 @@ const start = async () => {
 
         // 2. Database Synchronization
         // We now use Prisma Migrations for schema changes.
-        // sequelize.sync({ alter: true }) can conflict with Prisma's schema.
         logger.info('Database models initialization complete (Skipped Sequelize Sync).');
 
-        // 3. Start HTTP server
+        // 3. Initialize Cron Jobs
+        initCronJobs();
+
+        // 4. Start HTTP server
         const server = app.listen(env.port, () => {
             logger.info(`Server running in ${env.env} mode on port ${env.port}`);
             logger.info(`API available at: http://localhost:${env.port}/api`);

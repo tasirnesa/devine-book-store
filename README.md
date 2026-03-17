@@ -1,69 +1,60 @@
-# 📚 Book Store Web Application
+# 📚 Spiritual Library - Manfusaa
 
-## 📖 About the Project
-
-This project is a **Book Store Web Application** that allows users to browse, search, and manage books online.
-It is designed to provide a simple and efficient way for users to explore books and manage bookstore data through a modern web interface.
+A modern, multi-language digital library for spiritual and theological manuscripts. This application allows seekers to browse, search, and study sacred texts across multiple languages with a premium, focused user experience.
 
 ---
 
-## 🚀 What I'm Currently Working On
+## 🛠️ Technology Stack
 
-* Building a responsive **online bookstore system**
-* Developing both **frontend and backend functionalities**
-* Implementing features such as:
+### Frontend
+- **React 18**: Modern UI library.
+- **Redux Toolkit**: Centralized state management for books, auth, and languages.
+- **i18next**: Sophisticated multi-language orchestration.
+- **Lucide React**: Premium iconography.
+- **Vanilla CSS**: Custom design system for a unique aesthetic.
 
-  * Book listing
-  * Book search
-  * Book details view
-  * Book management (add, update, delete)
-
----
-
-## 🛠️ Technologies & Tools
-
-The project is built using the following technologies:
-
-* **Frontend:** React / Angular
-* **Backend:** Node.js / ASP.NET (C#)
-* **Database:** PostgreSQL
-* **Version Control:** Git & GitHub
+### Backend
+- **Node.js & Express**: Scalable API architecture.
+- **Prisma ORM**: Type-safe database interactions.
+- **PostgreSQL**: Robust relational data storage.
+- **JWT**: Secure token-based authentication.
 
 ---
 
-## ✨ Features
+## ✨ Core Features
 
-* Browse available books
-* Search books by title or author
-* View detailed book information
-* Manage books in the system
-* Clean and user-friendly interface
+- **🌐 Multi-Language Ecosystem**: Full support for English, Arabic, Amharic, and Afan Oromo, including RTL (Right-to-Left) layout support.
+- **🔍 Intelligent Filtering**: Category-based filtering and real-time search across authors, titles, and ISBNs.
+- **💎 Premium UX**: Focused authentication pages, smooth transitions, and a glassmorphism-based design system.
+- **🛡️ Secure Access**: Robust route protection with server-side identity verification and role-based access control (Admin/User).
+- **📊 Admin Portal**: Comprehensive dashboard for managing manuscripts, categories, and users.
+- **📖 Study Tools**: Direct PDF reading, manuscript downloads, and external source linking.
 
 ---
 
-## 📦 Installation
+## 📦 Getting Started
 
-1. Clone the repository
+### Prerequisites
+- Node.js (v16+)
+- PostgreSQL Database
 
-```
-git clone https://github.com/your-username/book-store-web.git
-```
+### 1. Database Setup
+1. Create a `.env` file in the `backend` directory.
+2. Add your database connection string: `DATABASE_URL="postgresql://user:password@localhost:5432/db_name"`
+3. Push the schema: `npx prisma db push`
+4. Seed the database: `npm run prisma:seed`
 
-2. Navigate to the project folder
-
-```
-cd book-store-web
-```
-
-3. Install dependencies
-
-```
+### 2. Backend Installation
+```bash
+cd backend
 npm install
+npm run dev
 ```
 
-4. Run the project
-
-```
+### 3. Frontend Installation
+```bash
+cd frontend
+npm install
 npm run dev
 ```
 
@@ -71,11 +62,8 @@ npm run dev
 
 ## 📬 Contact
 
-If you want to collaborate or have questions, feel free to reach out.
-
-📧 Email: tayesirnesa430@gmail.com(mailto:your-email@example.com)
+**Tayes Sirnesa**  
+📧 Email: tayesirnesa430@gmail.com
 
 ---
-
-⭐ If you like this project, consider giving it a star on GitHub!
-
+⭐ Ported with care for spiritual seekers.

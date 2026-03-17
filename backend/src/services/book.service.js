@@ -117,10 +117,15 @@ exports.getBookBySlug = async (slug, lang = 'en') => {
  * Increment view count
  */
 exports.incrementViews = async (id) => {
-    await prisma.book.update({
-        where: { id: parseInt(id) },
-        data: { views: { increment: 1 } }
-    });
+    try {
+        await prisma.book.update({
+            where: { id: parseInt(id) },
+            data: { views: { increment: 1 } }
+        });
+    } catch (err) {
+        const logger = require('../config/logger');
+        logger.error(`Error incrementing views for book ${id}: ${err.message}`);
+    }
 };
 
 /**

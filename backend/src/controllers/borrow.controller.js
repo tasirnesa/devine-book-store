@@ -1,5 +1,8 @@
 const prisma = require('../config/prisma');
 const { success, error } = require('../utils/response');
+const logger = require('../config/logger');
+const { notifyReservations } = require('../services/reservation.service');
+const { sendBookAvailableNotification } = require('../services/mail.service');
 
 /**
  * Issue a book to a user
@@ -77,6 +80,17 @@ exports.returnBook = async (req, res, next) => {
                 fineAmount
             }
         });
+
+        // Trigger reservation notification
+        try {
+            const nextReservation = await notifyReservations(borrowing.bookId);
+            if (nextReservation) {
+                const enTranslation = nextReservation.book.translations.find(t => t.languageId === 1) || nextReservation.book.translations[0];
+                await sendBookAvailableNotification(nextReservation.user, { title: enTranslation.title });
+            }
+        } catch (reserveErr) {
+            logger.error(`Failed to trigger reservation notification: ${reserveErr.message}`);
+        }
 
         return success(res, updated, 'Book returned successfully');
     } catch (err) {

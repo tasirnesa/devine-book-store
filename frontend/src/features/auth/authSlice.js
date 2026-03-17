@@ -38,8 +38,8 @@ const authSlice = createSlice({
     initialState: {
         user: null,
         token: token,
-        isAuthenticated: !!token,
-        loading: false,
+        isAuthenticated: false, // Wait for loadUser to confirm
+        loading: !!token, // Only loading if we have a token to verify
         error: null,
     },
     reducers: {

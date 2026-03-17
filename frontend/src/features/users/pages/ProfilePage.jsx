@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { useTranslation } from 'react-i18next';
-import { User, BookOpen, Bookmark, Calendar, Settings, ShieldCheck, ArrowRight, LogOut, X, Save, Mail, Edit3 } from 'lucide-react';
+import { User, BookOpen, Bookmark, Calendar, Settings, ShieldCheck, ArrowRight, LogOut, X, Save, Mail, Edit3, BellRing } from 'lucide-react';
 import { Link, useNavigate } from 'react-router-dom';
 import { logout, loadUser } from '../../auth/authSlice';
 import axiosInstance from '../../../shared/services/axiosInstance';
@@ -21,6 +21,24 @@ const ProfilePage = () => {
         password: ''
     });
     const [error, setError] = useState('');
+    const [reservations, setReservations] = useState([]);
+    const [loadingReservations, setLoadingReservations] = useState(false);
+
+    const fetchReservations = async () => {
+        setLoadingReservations(true);
+        try {
+            const response = await axiosInstance.get('/reservations/my');
+            setReservations(response.data);
+        } catch (err) {
+            console.error('Failed to fetch reservations', err);
+        } finally {
+            setLoadingReservations(false);
+        }
+    };
+
+    useEffect(() => {
+        fetchReservations();
+    }, []);
 
     const handleLogout = () => {
         dispatch(logout());
@@ -151,7 +169,41 @@ const ProfilePage = () => {
                         </div>
 
                         <div className="space-y-6">
-                            <h2 className="text-2xl font-serif font-black text-bam-navy px-4">{t('dashboard.account')}</h2>
+                            <h2 className="text-2xl font-serif font-black text-bam-navy px-4">My Status</h2>
+                            
+                            {/* Reservations Section */}
+                            <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm p-6 space-y-4">
+                                <div className="flex items-center gap-3 text-bam-navy pb-4 border-b border-gray-50">
+                                    <BellRing size={20} className="text-bam-red" />
+                                    <h3 className="font-black text-xs uppercase tracking-widest">{t('dashboard.reservations') || 'Active Reservations'}</h3>
+                                </div>
+                                
+                                {loadingReservations ? (
+                                    <div className="py-4 text-center"><Loader /></div>
+                                ) : reservations.length === 0 ? (
+                                    <p className="text-[10px] text-gray-400 font-bold uppercase tracking-widest text-center py-4">No active reservations.</p>
+                                ) : (
+                                    <div className="space-y-3">
+                                        {reservations.map(res => {
+                                            const enTranslation = res.book.translations.find(t => t.languageId === 1) || res.book.translations[0];
+                                            return (
+                                                <div key={res.id} className="p-4 bg-gray-50 rounded-2xl flex flex-col gap-2">
+                                                    <p className="text-xs font-black text-bam-navy italic">{enTranslation.title}</p>
+                                                    <div className="flex items-center justify-between">
+                                                        <span className={`text-[8px] font-black uppercase tracking-widest px-2 py-1 rounded-full ${
+                                                            res.status === 'NOTIFIED' ? 'bg-green-100 text-green-700' : 'bg-blue-100 text-blue-700'
+                                                        }`}>
+                                                            {res.status}
+                                                        </span>
+                                                        <span className="text-[8px] text-gray-400 font-bold">{new Date(res.createdAt).toLocaleDateString()}</span>
+                                                    </div>
+                                                </div>
+                                            );
+                                        })}
+                                    </div>
+                                )}
+                            </div>
+
                             <div className="bg-white rounded-3xl border border-gray-100 overflow-hidden shadow-sm">
                                 <div className="p-2">
                                     <button 

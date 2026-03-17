@@ -4,7 +4,9 @@ import { Book, Users, Clock, CheckCircle, AlertCircle, Search, Plus, X, Calendar
 import Loader from '../../../shared/components/Loader';
 
 const AdminBorrowPage = () => {
+    const [activeTab, setActiveTab] = useState('loans'); // 'loans' or 'reservations'
     const [records, setRecords] = useState([]);
+    const [reservations, setReservations] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
@@ -14,6 +16,7 @@ const AdminBorrowPage = () => {
     const [formData, setFormData] = useState({
         userId: '',
         bookId: '',
+        reservationId: null,
         dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0] // Default 14 days
     });
 
@@ -24,14 +27,16 @@ const AdminBorrowPage = () => {
     const fetchData = async () => {
         setLoading(true);
         try {
-            const [recordsRes, usersRes, booksRes] = await Promise.all([
+            const [recordsRes, usersRes, booksRes, reservationsRes] = await Promise.all([
                 axiosInstance.get('/admin/borrow'),
                 axiosInstance.get('/admin/users'),
-                axiosInstance.get('/books?pageSize=100')
+                axiosInstance.get('/books?pageSize=100'),
+                axiosInstance.get('/reservations/admin')
             ]);
             setRecords(recordsRes.data.data);
             setUsers(usersRes.data.data);
             setBooks(booksRes.data.data.books);
+            setReservations(reservationsRes.data.data);
         } catch (err) {
             console.error('Failed to fetch data', err);
         } finally {
@@ -47,20 +52,40 @@ const AdminBorrowPage = () => {
         e.preventDefault();
         setIsSubmitting(true);
         try {
-            await axiosInstance.post('/admin/borrow/issue', formData);
+            if (formData.reservationId) {
+                // Fulfill existing reservation
+                await axiosInstance.post(`/reservations/${formData.reservationId}/fulfill`, {
+                    dueDate: formData.dueDate
+                });
+            } else {
+                // Standard issue
+                await axiosInstance.post('/admin/borrow/issue', formData);
+            }
+            
             setIsModalOpen(false);
             setFormData({
                 userId: '',
                 bookId: '',
+                reservationId: null,
                 dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
             });
             fetchData();
         } catch (err) {
-            console.error('Issue failed', err);
-            alert(err.response?.data?.message || 'Failed to issue book');
+            console.error('Operation failed', err);
+            alert(err.response?.data?.message || 'Failed to process request');
         } finally {
             setIsSubmitting(false);
         }
+    };
+
+    const handleFulfillClick = (reservation) => {
+        setFormData({
+            userId: reservation.userId,
+            bookId: reservation.bookId,
+            reservationId: reservation.id,
+            dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+        });
+        setIsModalOpen(true);
     };
 
     const handleReturnBook = async (id) => {
@@ -78,19 +103,48 @@ const AdminBorrowPage = () => {
         record.book.translations[0]?.title.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
+    const filteredReservations = reservations.filter(res => 
+        res.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        res.book.translations[0]?.title.toLowerCase().includes(searchTerm.toLowerCase())
+    );
+
     return (
         <div className="space-y-6">
             <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
                 <div>
-                    <h1 className="text-4xl font-black text-bam-navy tracking-tight font-serif italic">Borrow & Return</h1>
-                    <p className="text-gray-500 text-sm font-medium">Circulation management for the spiritual archives.</p>
+                    <h1 className="text-4xl font-black text-bam-navy tracking-tight font-serif italic">Circulation</h1>
+                    <p className="text-gray-500 text-sm font-medium">Manage loans and seeker reservations.</p>
                 </div>
                 <button
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => {
+                        setFormData({
+                            userId: '',
+                            bookId: '',
+                            reservationId: null,
+                            dueDate: new Date(Date.now() + 14 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+                        });
+                        setIsModalOpen(true);
+                    }}
                     className="bg-bam-navy text-white px-6 py-3 rounded-2xl font-black text-xs uppercase tracking-[0.2em] flex items-center gap-3 hover:bg-bam-red transition-all shadow-xl shadow-blue-100 hover:shadow-red-50"
                 >
                     <Plus size={18} />
                     Issue New Work
+                </button>
+            </div>
+
+            {/* Tabs */}
+            <div className="flex gap-2 p-1 bg-gray-100 rounded-2xl w-fit">
+                <button 
+                    onClick={() => setActiveTab('loans')}
+                    className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'loans' ? 'bg-white text-bam-navy shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                    Active Loans
+                </button>
+                <button 
+                    onClick={() => setActiveTab('reservations')}
+                    className={`px-6 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all ${activeTab === 'reservations' ? 'bg-white text-bam-navy shadow-sm' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                    Seeker Reservations
                 </button>
             </div>
 
@@ -144,96 +198,171 @@ const AdminBorrowPage = () => {
             {/* Records Table */}
             <div className="bg-white rounded-3xl shadow-2xl border border-gray-100 overflow-hidden">
                 <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead>
-                            <tr className="bg-gray-50/50 border-b border-gray-100">
-                                <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Seeker (Member)</th>
-                                <th className="px-6 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Spiritual Work</th>
-                                <th className="px-6 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Issuance / Due</th>
-                                <th className="px-6 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Status</th>
-                                <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {loading ? (
-                                <tr>
-                                    <td colSpan="5" className="py-24 text-center">
-                                        <Loader />
-                                    </td>
+                    {activeTab === 'loans' ? (
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="bg-gray-50/50 border-b border-gray-100">
+                                    <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Seeker (Member)</th>
+                                    <th className="px-6 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Spiritual Work</th>
+                                    <th className="px-6 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Issuance / Due</th>
+                                    <th className="px-6 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Status</th>
+                                    <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Actions</th>
                                 </tr>
-                            ) : filteredRecords.length > 0 ? (
-                                filteredRecords.map((record) => (
-                                    <tr key={record.id} className="hover:bg-gray-50/30 transition-colors">
-                                        <td className="px-8 py-5">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-8 h-8 bg-bam-navy/5 rounded-full flex items-center justify-center text-bam-navy text-[10px] font-black">
-                                                    {record.user.name.substring(0, 2).toUpperCase()}
-                                                </div>
-                                                <div>
-                                                    <p className="font-bold text-bam-navy text-sm">{record.user.name}</p>
-                                                    <p className="text-[10px] text-gray-400 font-medium">{record.user.email}</p>
-                                                </div>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <div className="flex items-center gap-3">
-                                                <div className="w-10 h-14 bg-gray-50 rounded-lg overflow-hidden border border-gray-100 flex-shrink-0">
-                                                    {record.book.coverUrl ? (
-                                                        <img src={`${import.meta.env.VITE_API_BASE_URL.replace('/api', '')}${record.book.coverUrl}`} className="w-full h-full object-cover" alt="" />
-                                                    ) : (
-                                                        <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                                            <Book size={16} />
-                                                        </div>
-                                                    )}
-                                                </div>
-                                                <p className="font-bold text-bam-navy text-sm line-clamp-2 max-w-[200px]">
-                                                    {record.book.translations[0]?.title || 'Unknown Title'}
-                                                </p>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <div className="space-y-1">
-                                                <p className="text-xs font-bold text-gray-500 flex items-center gap-2">
-                                                    <Calendar size={12} />
-                                                    {new Date(record.issueDate).toLocaleDateString()}
-                                                </p>
-                                                <p className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${new Date(record.dueDate) < new Date() && record.status === 'ISSUED' ? 'text-bam-red' : 'text-gray-400'}`}>
-                                                    <ArrowRight size={10} />
-                                                    Due: {new Date(record.dueDate).toLocaleDateString()}
-                                                </p>
-                                            </div>
-                                        </td>
-                                        <td className="px-6 py-5">
-                                            <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
-                                                record.status === 'ISSUED' ? 'bg-blue-100 text-blue-600' :
-                                                record.status === 'RETURNED' ? 'bg-green-100 text-green-600' :
-                                                'bg-red-100 text-red-600'
-                                            }`}>
-                                                {record.status}
-                                            </span>
-                                        </td>
-                                        <td className="px-8 py-5 text-right">
-                                            {record.status === 'ISSUED' && (
-                                                <button
-                                                    onClick={() => handleReturnBook(record.id)}
-                                                    className="bg-white border border-gray-100 text-bam-navy px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-bam-navy hover:text-white transition-all shadow-sm"
-                                                >
-                                                    Process Return
-                                                </button>
-                                            )}
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan="5" className="py-24 text-center">
+                                            <Loader />
                                         </td>
                                     </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan="5" className="py-24 text-center text-gray-400 opacity-50">
-                                        <Bookmark size={48} className="mx-auto mb-4" />
-                                        <p className="text-xs font-black uppercase tracking-widest">No matching records found</p>
-                                    </td>
+                                ) : filteredRecords.length > 0 ? (
+                                    filteredRecords.map((record) => (
+                                        <tr key={record.id} className="hover:bg-gray-50/30 transition-colors">
+                                            <td className="px-8 py-5">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 bg-bam-navy/5 rounded-full flex items-center justify-center text-bam-navy text-[10px] font-black">
+                                                        {record.user.name.substring(0, 2).toUpperCase()}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-bam-navy text-sm">{record.user.name}</p>
+                                                        <p className="text-[10px] text-gray-400 font-medium">{record.user.email}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-10 h-14 bg-gray-50 rounded-lg overflow-hidden border border-gray-100 flex-shrink-0">
+                                                        {record.book.coverUrl ? (
+                                                            <img src={`${import.meta.env.VITE_API_BASE_URL.replace('/api', '')}${record.book.coverUrl}`} className="w-full h-full object-cover" alt="" />
+                                                        ) : (
+                                                            <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                                                <Book size={16} />
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                    <p className="font-bold text-bam-navy text-sm line-clamp-2 max-w-[200px]">
+                                                        {record.book.translations[0]?.title || 'Unknown Title'}
+                                                    </p>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <div className="space-y-1">
+                                                    <p className="text-xs font-bold text-gray-500 flex items-center gap-2">
+                                                        <Calendar size={12} />
+                                                        {new Date(record.issueDate).toLocaleDateString()}
+                                                    </p>
+                                                    <p className={`text-[10px] font-black uppercase tracking-widest flex items-center gap-2 ${new Date(record.dueDate) < new Date() && record.status === 'ISSUED' ? 'text-bam-red' : 'text-gray-400'}`}>
+                                                        <ArrowRight size={10} />
+                                                        Due: {new Date(record.dueDate).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                                                    record.status === 'ISSUED' ? 'bg-blue-100 text-blue-600' :
+                                                    record.status === 'RETURNED' ? 'bg-green-100 text-green-600' :
+                                                    'bg-red-100 text-red-600'
+                                                }`}>
+                                                    {record.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-8 py-5 text-right">
+                                                {record.status === 'ISSUED' && (
+                                                    <button
+                                                        onClick={() => handleReturnBook(record.id)}
+                                                        className="bg-white border border-gray-100 text-bam-navy px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-bam-navy hover:text-white transition-all shadow-sm"
+                                                    >
+                                                        Process Return
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="5" className="py-24 text-center text-gray-400 opacity-50">
+                                            <Bookmark size={48} className="mx-auto mb-4" />
+                                            <p className="text-xs font-black uppercase tracking-widest">No active loans found</p>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    ) : (
+                        <table className="w-full text-left">
+                            <thead>
+                                <tr className="bg-gray-50/50 border-b border-gray-100">
+                                    <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Seeker (Member)</th>
+                                    <th className="px-6 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Spiritual Work</th>
+                                    <th className="px-6 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Reserved On</th>
+                                    <th className="px-6 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">Status</th>
+                                    <th className="px-8 py-6 text-[10px] font-black text-gray-400 uppercase tracking-[0.2em] text-right">Actions</th>
                                 </tr>
-                            )}
-                        </tbody>
-                    </table>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {loading ? (
+                                    <tr>
+                                        <td colSpan="5" className="py-24 text-center">
+                                            <Loader />
+                                        </td>
+                                    </tr>
+                                ) : filteredReservations.length > 0 ? (
+                                    filteredReservations.map((res) => (
+                                        <tr key={res.id} className="hover:bg-gray-50/30 transition-colors">
+                                            <td className="px-8 py-5">
+                                                <div className="flex items-center gap-3">
+                                                    <div className="w-8 h-8 bg-bam-navy/5 rounded-full flex items-center justify-center text-bam-navy text-[10px] font-black">
+                                                        {res.user.name.substring(0, 2).toUpperCase()}
+                                                    </div>
+                                                    <div>
+                                                        <p className="font-bold text-bam-navy text-sm">{res.user.name}</p>
+                                                        <p className="text-[10px] text-gray-400 font-medium">{res.user.email}</p>
+                                                    </div>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <div className="flex items-center gap-3">
+                                                    <p className="font-bold text-bam-navy text-sm">
+                                                        {res.book.translations[0]?.title || res.book.slug}
+                                                    </p>
+                                                </div>
+                                            </td>
+                                            <td className="px-6 py-5 text-xs font-bold text-gray-500">
+                                                {new Date(res.createdAt).toLocaleDateString()}
+                                            </td>
+                                            <td className="px-6 py-5">
+                                                <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest ${
+                                                    res.status === 'NOTIFIED' ? 'bg-amber-100 text-amber-600' :
+                                                    res.status === 'PENDING' ? 'bg-gray-100 text-gray-600' :
+                                                    'bg-green-100 text-green-600'
+                                                }`}>
+                                                    {res.status}
+                                                </span>
+                                            </td>
+                                            <td className="px-8 py-5 text-right">
+                                                {(res.status === 'PENDING' || res.status === 'NOTIFIED') && (
+                                                    <button
+                                                        onClick={() => handleFulfillClick(res)}
+                                                        className="bg-bam-navy text-white px-4 py-2 rounded-xl text-[10px] font-black uppercase tracking-widest hover:bg-bam-red transition-all shadow-md"
+                                                    >
+                                                        Approve & Issue
+                                                    </button>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))
+                                ) : (
+                                    <tr>
+                                        <td colSpan="5" className="py-24 text-center text-gray-400 opacity-50">
+                                            <BellRing size={48} className="mx-auto mb-4" />
+                                            <p className="text-xs font-black uppercase tracking-widest">No reservations found</p>
+                                        </td>
+                                    </tr>
+                                )}
+                            </tbody>
+                        </table>
+                    )}
                 </div>
             </div>
 

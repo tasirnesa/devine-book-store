@@ -26,21 +26,24 @@ const AppRoutes = () => {
         <Routes>
             {/* Public Routes with MainLayout */}
             <Route element={<MainLayout />}>
-                <Route path="/" element={<Navigate to="/books" replace />} />
+                <Route path="/" element={<Navigate to="/login" replace />} />
                 <Route path="/books" element={<BookListPage />} />
                 <Route path="/books/:slug" element={<BookDetailsPage />} />
                 <Route path="/saved" element={<div className="container mx-auto px-4 py-20 text-center text-bam-navy font-bold">Coming Soon: Your Sacred Collection</div>} />
-                <Route path="/login" element={<LoginPage />} />
-                <Route path="/register" element={<RegisterPage />} />
             </Route>
+
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/register" element={<RegisterPage />} />
 
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
                 <Route element={<MainLayout />}>
                     <Route path="/profile" element={<ProfilePage />} />
                 </Route>
+            </Route>
 
-                {/* Admin Routes */}
+            {/* Admin Only Routes */}
+            <Route element={<ProtectedRoute adminOnly={true} />}>
                 <Route path="/admin" element={<AdminLayout />}>
                     <Route index element={<AdminDashboardPage />} />
                     <Route path="books" element={<AdminBookListPage />} />

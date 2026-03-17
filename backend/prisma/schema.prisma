@@ -45,6 +45,7 @@ model Book {
 
   categories CategoryOnBook[]
   borrowings Borrowing[]
+  reservations Reservation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -121,6 +122,7 @@ model User {
   isActive          Boolean  @default(true)
 
   borrowings        Borrowing[]
+  reservations      Reservation[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -130,14 +132,15 @@ model User {
 
 // ── Borrowing ─────────────────────────────────────────────
 model Borrowing {
-  id         Int             @id @default(autoincrement())
-  bookId     Int
-  userId     Int
-  issueDate  DateTime        @default(now())
-  dueDate    DateTime
-  returnDate DateTime?
-  status     BorrowingStatus @default(ISSUED)
-  fineAmount Float           @default(0)
+  id                  Int             @id @default(autoincrement())
+  bookId              Int
+  userId              Int
+  issueDate           DateTime        @default(now())
+  dueDate             DateTime
+  returnDate          DateTime?
+  status              BorrowingStatus @default(ISSUED)
+  fineAmount          Float           @default(0)
+  dueDateReminderSent Boolean         @default(false)
 
   book Book @relation(fields: [bookId], references: [id])
   user User @relation(fields: [userId], references: [id])
@@ -146,6 +149,29 @@ model Borrowing {
   updatedAt DateTime @updatedAt
 
   @@map("borrowings")
+}
+
+// ── Reservation ───────────────────────────────────────────
+model Reservation {
+  id        Int               @id @default(autoincrement())
+  bookId    Int
+  userId    Int
+  status    ReservationStatus @default(PENDING)
+
+  book Book @relation(fields: [bookId], references: [id])
+  user User @relation(fields: [userId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@map("reservations")
+}
+
+enum ReservationStatus {
+  PENDING
+  NOTIFIED
+  COMPLETED
+  CANCELLED
 }
 
 enum BorrowingStatus {

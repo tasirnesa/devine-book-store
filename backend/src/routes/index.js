@@ -10,6 +10,7 @@ router.use('/categories', require('./category.routes'));
 router.use('/authors', require('./author.routes'));
 router.use('/admin', require('./admin.routes'));
 router.use('/admin/borrow', require('./borrow.routes'));
+router.use('/reservations', require('./reservation.routes'));
 
 // API health check
 router.get('/health', (req, res) => {

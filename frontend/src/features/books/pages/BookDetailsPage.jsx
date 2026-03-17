@@ -1,23 +1,28 @@
 import React, { useEffect, useState } from 'react';
-import { useParams, Link } from 'react-router-dom';
+import { useParams, Link, useNavigate } from 'react-router-dom';
 import axiosInstance from '../../../shared/services/axiosInstance';
 import { useTranslation } from 'react-i18next';
-import { BookOpen, Download, User, Calendar, Tag, Eye, ChevronLeft, Star, Heart, Share2, Info } from 'lucide-react';
+import { BookOpen, Download, User, Calendar, Tag, Eye, ChevronLeft, Star, Heart, Share2, Info, BellRing } from 'lucide-react';
+import { useSelector } from 'react-redux';
 import Loader from '../../../shared/components/Loader';
 
 const BookDetailsPage = () => {
     const { slug } = useParams();
+    const navigate = useNavigate();
     const { t, i18n } = useTranslation();
+    const { user, isAuthenticated } = useSelector((state) => state.auth);
     const [book, setBook] = useState(null);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
+    const [reserving, setReserving] = useState(false);
+    const [reservationMsg, setReservationMsg] = useState(null);
 
     useEffect(() => {
         const fetchBook = async () => {
             setLoading(true);
             try {
                 const response = await axiosInstance.get(`/books/${slug}?lang=${i18n.language}`);
-                setBook(response.data.data);
+                setBook(response.data.data || response.data);
             } catch (err) {
                 console.error('Failed to fetch book details', err);
                 setError(t('common.error_loading') || 'Failed to load spiritual wisdom.');
@@ -27,6 +32,24 @@ const BookDetailsPage = () => {
         };
         fetchBook();
     }, [slug, i18n.language, t]);
+
+    const handleReserve = async () => {
+        if (!isAuthenticated) {
+            navigate('/login');
+            return;
+        }
+
+        setReserving(true);
+        setReservationMsg(null);
+        try {
+            await axiosInstance.post('/reservations', { bookId: book.id });
+            setReservationMsg({ type: 'success', text: 'Blessed! You are now in the reservation pool. We will notify you when it returns.' });
+        } catch (err) {
+            setReservationMsg({ type: 'error', text: err.response?.data?.message || 'Failed to reserve the manuscript.' });
+        } finally {
+            setReserving(false);
+        }
+    };
 
     if (loading) return <div className="h-[70vh] flex items-center justify-center"><Loader /></div>;
 
@@ -169,6 +192,15 @@ const BookDetailsPage = () => {
                             </div>
                         </div>
 
+                        {/* Reservation Alert Message */}
+                        {reservationMsg && (
+                            <div className={`p-4 rounded-2xl mb-6 text-xs font-black uppercase tracking-widest text-center border animate-in slide-in-from-top ${
+                                reservationMsg.type === 'success' ? 'bg-green-50 text-green-700 border-green-100' : 'bg-red-50 text-bam-red border-red-100'
+                            }`}>
+                                {reservationMsg.text}
+                            </div>
+                        )}
+
                         {/* Action Buttons */}
                         <div className="flex flex-col md:flex-row gap-6 pt-10">
                             {book.fileUrl ? (
@@ -210,21 +242,45 @@ const BookDetailsPage = () => {
                                     {t('common.content_unavailable') || 'Archives Unavailable'}
                                 </button>
                             )}
+
+                            {/* Physical Reservation Button */}
+                            {book.quantity === 0 && (
+                                <button 
+                                    onClick={handleReserve}
+                                    disabled={reserving}
+                                    className="flex-grow md:flex-initial px-10 py-6 bg-bam-red text-white rounded-2xl font-black text-xs uppercase tracking-widest flex items-center justify-center gap-3 hover:bg-bam-navy transition-all shadow-xl shadow-red-100 active:scale-[0.98] disabled:opacity-50"
+                                >
+                                    {reserving ? <Loader /> : (
+                                        <>
+                                            <BellRing size={20} />
+                                            Reserve Physical Copy
+                                        </>
+                                    )}
+                                </button>
+                            )}
                         </div>
 
                         {/* Meta Info Card */}
                         <div className="bg-gray-50 p-8 rounded-[2rem] flex flex-col md:flex-row md:items-center justify-between gap-6 border border-gray-100">
                             <div>
-                                <h4 className="font-bold text-bam-navy mb-1">Seeker Availability</h4>
-                                <p className="text-xs font-medium text-gray-500">This work is currently available for digital study.</p>
+                                <h4 className="font-bold text-bam-navy mb-1">Book Availability</h4>
+                                <p className="text-xs font-medium text-gray-500">
+                                    {book.quantity > 0 
+                                        ? 'This work is currently available in our physical and digital archives.' 
+                                        : 'Digital study available. Physical copies are currently being studied by other seekers.'}
+                                </p>
                             </div>
                             <div className="flex gap-2">
-                                <span className="bg-green-100 text-green-700 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest">
-                                    Digital Copy Available
+                                <span className={`px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest ${book.fileUrl || book.externalUrl ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-400'}`}>
+                                    {book.fileUrl || book.externalUrl ? 'Digital Copy Available' : 'No Digital Copy'}
                                 </span>
-                                {book.quantity > 0 && (
+                                {book.quantity > 0 ? (
                                     <span className="bg-blue-100 text-blue-700 px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest">
                                         {book.quantity} Physical Copies
+                                    </span>
+                                ) : (
+                                    <span className="bg-red-100 text-bam-red px-4 py-2 rounded-full text-[10px] font-black uppercase tracking-widest">
+                                        Out of Stock (Physical)
                                     </span>
                                 )}
                             </div>
