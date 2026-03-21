@@ -16,6 +16,12 @@ async function main() {
             role: 'ADMIN',
         },
         {
+            name: 'Standard Admin',
+            email: 'admin@example.com',
+            password: hashedPassword,
+            role: 'ADMIN',
+        },
+        {
             name: 'Soressa User',
             email: 'soressa@gmail.com',
             password: hashedPassword,
@@ -96,6 +102,7 @@ async function main() {
         {
             slug: 'the-spiritual-life',
             featured: true,
+            quantity: 0,
             authorId: authorMap['abune-shenouda-iii'],
             categories: ['spirituality', 'prayer'],
             translations: [

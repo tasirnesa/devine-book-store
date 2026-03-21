@@ -22,11 +22,11 @@ app.use(cors({
 }));
 
 // Rate limiting — 100 requests per 15 min per IP
-app.use(rateLimit({
-    windowMs: 15 * 60 * 1000,
-    max: 100,
-    message: { success: false, message: 'Too many requests, please try again later.' },
-}));
+// app.use(rateLimit({
+//     windowMs: 15 * 60 * 1000,
+//     max: 100,
+//     message: { success: false, message: 'Too many requests, please try again later.' },
+// }));
 
 // ── Parsers ──────────────────────────────────────────────
 app.use(express.json({ limit: '10mb' }));

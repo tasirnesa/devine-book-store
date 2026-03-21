@@ -1,6 +1,3 @@
-// This is the Prisma schema for the backend
-// Run: npx prisma migrate dev --name init
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -10,127 +7,111 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-// ── Languages ─────────────────────────────────────────────
 model Language {
   id        Int               @id @default(autoincrement())
-  code      String            @unique   // "en", "ar", "am", "om"
+  code      String            @unique
   name      String
-  direction String            @default("ltr") // "ltr" | "rtl"
+  direction String            @default("ltr")
   isActive  Boolean           @default(true)
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
   books     BookTranslation[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   @@map("languages")
 }
 
-// ── Books (language-agnostic base record) ─────────────────
 model Book {
-  id          Int               @id @default(autoincrement())
-  slug        String            @unique
-  coverUrl    String?
-  fileUrl     String?           // Path to uploaded PDF/ebook
-  externalUrl String?           // External link if not stored locally
-  featured    Boolean           @default(false)
-  views       Int               @default(0)
-  publishedAt DateTime?
-  isbn        String?           @unique
-  quantity    Int               @default(1)
-
+  id           Int               @id @default(autoincrement())
+  slug         String            @unique
+  coverUrl     String?
+  fileUrl      String?
+  externalUrl  String?
+  featured     Boolean           @default(false)
+  views        Int               @default(0)
+  publishedAt  DateTime?
+  authorId     Int?
+  createdAt    DateTime          @default(now())
+  updatedAt    DateTime          @updatedAt
+  isbn         String?           @unique
+  quantity     Int               @default(1)
   translations BookTranslation[]
-
-  authorId Int?
-  author   Author? @relation(fields: [authorId], references: [id])
-
-  categories CategoryOnBook[]
-  borrowings Borrowing[]
+  author       Author?           @relation(fields: [authorId], references: [id])
+  borrowings   Borrowing[]
+  categories   CategoryOnBook[]
+  favorites    Favorite[]
   reservations Reservation[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   @@map("books")
 }
 
-// ── Per-language book content ─────────────────────────────
 model BookTranslation {
-  id          Int    @id @default(autoincrement())
+  id          Int      @id @default(autoincrement())
   bookId      Int
   languageId  Int
   title       String
   description String?
-  authorName  String?  // Transliterated author name in this language
+  authorName  String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+  book        Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  language    Language @relation(fields: [languageId], references: [id])
 
-  book     Book     @relation(fields: [bookId],     references: [id], onDelete: Cascade)
-  language Language @relation(fields: [languageId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  @@unique([bookId, languageId])   // One translation per language per book
+  @@unique([bookId, languageId])
   @@map("book_translations")
 }
 
-// ── Authors ───────────────────────────────────────────────
 model Author {
-  id       Int     @id @default(autoincrement())
-  name     String
-  slug     String  @unique
-  bio      String?
-  photoUrl String?
-  books    Book[]
-
+  id        Int      @id @default(autoincrement())
+  name      String
+  slug      String   @unique
+  bio       String?
+  photoUrl  String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
+  books     Book[]
 
   @@map("authors")
 }
 
-// ── Categories ────────────────────────────────────────────
 model Category {
-  id    Int    @id @default(autoincrement())
+  id    Int              @id @default(autoincrement())
   name  String
-  slug  String @unique
+  slug  String           @unique
   icon  String?
   books CategoryOnBook[]
 
   @@map("categories")
 }
 
-// ── Book ↔ Category (many-to-many) ───────────────────────
 model CategoryOnBook {
   bookId     Int
   categoryId Int
-
-  book     Book     @relation(fields: [bookId],     references: [id], onDelete: Cascade)
-  category Category @relation(fields: [categoryId], references: [id])
+  book       Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  category   Category @relation(fields: [categoryId], references: [id])
 
   @@id([bookId, categoryId])
   @@map("category_on_books")
 }
 
-// ── Users ─────────────────────────────────────────────────
 model User {
-  id                Int      @id @default(autoincrement())
+  id                Int            @id @default(autoincrement())
   name              String
-  email             String   @unique
+  email             String         @unique
   password          String
-  role              Role     @default(USER)
+  role              Role           @default(USER)
+  preferredLanguage String         @default("en")
+  isActive          Boolean        @default(true)
+  createdAt         DateTime       @default(now())
+  updatedAt         DateTime       @updatedAt
   phone             String?
-  preferredLanguage String   @default("en")
-  isActive          Boolean  @default(true)
-
   borrowings        Borrowing[]
+  favorites         Favorite[]
+  notifications     Notification[]
   reservations      Reservation[]
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
 
   @@map("users")
 }
 
-// ── Borrowing ─────────────────────────────────────────────
 model Borrowing {
   id                  Int             @id @default(autoincrement())
   bookId              Int
@@ -140,31 +121,59 @@ model Borrowing {
   returnDate          DateTime?
   status              BorrowingStatus @default(ISSUED)
   fineAmount          Float           @default(0)
+  createdAt           DateTime        @default(now())
+  updatedAt           DateTime        @updatedAt
   dueDateReminderSent Boolean         @default(false)
-
-  book Book @relation(fields: [bookId], references: [id])
-  user User @relation(fields: [userId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  book                Book            @relation(fields: [bookId], references: [id])
+  user                User            @relation(fields: [userId], references: [id])
 
   @@map("borrowings")
 }
 
-// ── Reservation ───────────────────────────────────────────
 model Reservation {
   id        Int               @id @default(autoincrement())
   bookId    Int
   userId    Int
   status    ReservationStatus @default(PENDING)
-
-  book Book @relation(fields: [bookId], references: [id])
-  user User @relation(fields: [userId], references: [id])
-
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt DateTime          @default(now())
+  updatedAt DateTime          @updatedAt
+  book      Book              @relation(fields: [bookId], references: [id])
+  user      User              @relation(fields: [userId], references: [id])
 
   @@map("reservations")
+}
+
+model Notification {
+  id        Int      @id @default(autoincrement())
+  userId    Int
+  type      String
+  message   String
+  isRead    Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@map("notifications")
+}
+
+model Favorite {
+  userId    Int
+  bookId    Int
+  createdAt DateTime @default(now())
+  book      Book     @relation(fields: [bookId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@id([userId, bookId])
+  @@map("favorites")
+}
+
+model Setting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+
+  @@map("settings")
 }
 
 enum ReservationStatus {
@@ -178,15 +187,6 @@ enum BorrowingStatus {
   ISSUED
   RETURNED
   OVERDUE
-}
-
-// ── Settings ──────────────────────────────────────────────
-model Setting {
-  id    Int    @id @default(autoincrement())
-  key   String @unique
-  value String
-
-  @@map("settings")
 }
 
 enum Role {

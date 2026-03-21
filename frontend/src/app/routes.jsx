@@ -20,6 +20,8 @@ import AdminTaxonomyPage from '../features/admin/pages/AdminTaxonomyPage';
 import AdminReportsPage from '../features/admin/pages/AdminReportsPage';
 import AdminSettingsPage from '../features/admin/pages/AdminSettingsPage';
 import AddBookPage from '../features/books/pages/AddBookPage';
+import BookReaderPage from '../features/books/pages/BookReaderPage';
+import SavedBooksPage from '../features/books/pages/SavedBooksPage';
 
 const AppRoutes = () => {
     return (
@@ -29,7 +31,8 @@ const AppRoutes = () => {
                 <Route path="/" element={<Navigate to="/login" replace />} />
                 <Route path="/books" element={<BookListPage />} />
                 <Route path="/books/:slug" element={<BookDetailsPage />} />
-                <Route path="/saved" element={<div className="container mx-auto px-4 py-20 text-center text-bam-navy font-bold">Coming Soon: Your Sacred Collection</div>} />
+                <Route path="/saved" element={<SavedBooksPage />} />
+                <Route path="/books/:slug/read" element={<BookReaderPage />} />
             </Route>
 
             <Route path="/login" element={<LoginPage />} />

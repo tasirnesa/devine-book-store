@@ -16,13 +16,22 @@ const BookDetailsPage = () => {
     const [error, setError] = useState(null);
     const [reserving, setReserving] = useState(false);
     const [reservationMsg, setReservationMsg] = useState(null);
+    const [isBookFavorited, setIsBookFavorited] = useState(false);
+    const [togglingFavorite, setTogglingFavorite] = useState(false);
 
     useEffect(() => {
         const fetchBook = async () => {
             setLoading(true);
             try {
                 const response = await axiosInstance.get(`/books/${slug}?lang=${i18n.language}`);
-                setBook(response.data.data || response.data);
+                const bookData = response.data.data || response.data;
+                setBook(bookData);
+
+                // Check favorite status if authenticated
+                if (isAuthenticated && bookData.id) {
+                    const favCheck = await axiosInstance.get(`/favorites/${bookData.id}/check`);
+                    setIsBookFavorited(favCheck.data.data.isFavorited);
+                }
             } catch (err) {
                 console.error('Failed to fetch book details', err);
                 setError(t('common.error_loading') || 'Failed to load spiritual wisdom.');
@@ -32,6 +41,24 @@ const BookDetailsPage = () => {
         };
         fetchBook();
     }, [slug, i18n.language, t]);
+
+    const handleToggleFavorite = async () => {
+        if (!isAuthenticated) {
+            navigate('/login');
+            return;
+        }
+
+        setTogglingFavorite(true);
+        try {
+            const response = await axiosInstance.post('/favorites/toggle', { bookId: book.id });
+            setIsBookFavorited(response.data.data.isFavorited);
+            window.dispatchEvent(new CustomEvent('favoriteUpdated'));
+        } catch (err) {
+            console.error('Failed to toggle favorite', err);
+        } finally {
+            setTogglingFavorite(false);
+        }
+    };
 
     const handleReserve = async () => {
         if (!isAuthenticated) {
@@ -113,8 +140,15 @@ const BookDetailsPage = () => {
 
                             {/* Social Actions */}
                             <div className="flex gap-4 mt-8">
-                                <button className="flex-grow flex items-center justify-center gap-3 py-4 bg-gray-50 hover:bg-bam-red hover:text-white rounded-2xl transition-all font-black text-xs uppercase tracking-widest text-bam-navy shadow-sm">
-                                    <Heart size={18} /> {t('common.save_to_list') || 'Save'}
+                                <button 
+                                    onClick={handleToggleFavorite}
+                                    disabled={togglingFavorite}
+                                    className={`flex-grow flex items-center justify-center gap-3 py-4 rounded-2xl transition-all font-black text-xs uppercase tracking-widest shadow-sm ${
+                                        isBookFavorited ? 'bg-bam-red text-white' : 'bg-gray-50 text-bam-navy hover:bg-bam-red/10'
+                                    }`}
+                                >
+                                    <Heart size={18} fill={isBookFavorited ? 'currentColor' : 'none'} strokeWidth={isBookFavorited ? 0 : 2} /> 
+                                    {isBookFavorited ? 'Saved to Collection' : (t('common.save_to_list') || 'Save')}
                                 </button>
                                 <button className="p-4 bg-gray-50 hover:bg-bam-navy hover:text-white rounded-2xl transition-all text-bam-navy shadow-sm">
                                     <Share2 size={18} />
@@ -205,15 +239,13 @@ const BookDetailsPage = () => {
                         <div className="flex flex-col md:flex-row gap-6 pt-10">
                             {book.fileUrl ? (
                                 <>
-                                    <a 
-                                        href={`${import.meta.env.VITE_API_BASE_URL.replace('/api', '')}${book.fileUrl}`} 
-                                        target="_blank" 
-                                        rel="noopener noreferrer"
+                                    <Link 
+                                        to={`/books/${book.slug}/read`}
                                         className="flex-grow bg-bam-navy text-white py-6 rounded-2xl font-black text-xs uppercase tracking-[.4em] flex items-center justify-center gap-4 hover:bg-bam-red transition-all shadow-2xl shadow-blue-200 hover:shadow-red-200 active:scale-[0.98]"
                                     >
                                         <BookOpen size={20} />
                                         {t('common.read_now') || 'Read Now'}
-                                    </a>
+                                    </Link>
                                     <a 
                                         href={`${import.meta.env.VITE_API_BASE_URL.replace('/api', '')}${book.fileUrl}`} 
                                         download

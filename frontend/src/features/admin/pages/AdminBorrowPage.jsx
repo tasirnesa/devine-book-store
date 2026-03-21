@@ -1,10 +1,15 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import axiosInstance from '../../../shared/services/axiosInstance';
-import { Book, Users, Clock, CheckCircle, AlertCircle, Search, Plus, X, Calendar, ArrowRight, Bookmark, DollarSign } from 'lucide-react';
+import { Plus, Search, Book, User as UserIcon, Calendar, ArrowRight, Bookmark, BellRing, AlertCircle, CheckCircle, X, Users } from 'lucide-react';
 import Loader from '../../../shared/components/Loader';
 
 const AdminBorrowPage = () => {
-    const [activeTab, setActiveTab] = useState('loans'); // 'loans' or 'reservations'
+    const location = useLocation();
+    const queryParams = new URLSearchParams(location.search);
+    const initialTab = queryParams.get('tab') || 'loans';
+
+    const [activeTab, setActiveTab] = useState(initialTab); // 'loans' or 'reservations'
     const [records, setRecords] = useState([]);
     const [reservations, setReservations] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -35,7 +40,7 @@ const AdminBorrowPage = () => {
             ]);
             setRecords(recordsRes.data.data);
             setUsers(usersRes.data.data);
-            setBooks(booksRes.data.data.books);
+            setBooks(booksRes.data.data);
             setReservations(reservationsRes.data.data);
         } catch (err) {
             console.error('Failed to fetch data', err);
@@ -99,13 +104,13 @@ const AdminBorrowPage = () => {
     };
 
     const filteredRecords = records.filter(record => 
-        record.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        record.book.translations[0]?.title.toLowerCase().includes(searchTerm.toLowerCase())
+        (record.user?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (record.book?.translations?.[0]?.title || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     const filteredReservations = reservations.filter(res => 
-        res.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        res.book.translations[0]?.title.toLowerCase().includes(searchTerm.toLowerCase())
+        (res.user?.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (res.book?.translations?.[0]?.title || res.book?.slug || '').toLowerCase().includes(searchTerm.toLowerCase())
     );
 
     return (
@@ -175,7 +180,7 @@ const AdminBorrowPage = () => {
                     <div>
                         <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Today's Returns</p>
                         <p className="text-2xl font-black text-bam-navy">
-                            {records.filter(r => r.status === 'RETURNED' && new Date(r.returnDate).toDateString() === new Date().toDateString()).length}
+                            {records.filter(r => r.status === 'RETURNED' && r.returnDate && new Date(r.returnDate).toDateString() === new Date().toDateString()).length}
                         </p>
                     </div>
                 </div>
@@ -412,7 +417,7 @@ const AdminBorrowPage = () => {
                                     >
                                         <option value="">Choose a work...</option>
                                         {books.map(b => (
-                                            <option key={b.id} value={b.id}>{b.activeTranslation?.title || b.slug}</option>
+                                            <option key={b.id} value={b.id}>{b.translations?.[0]?.title || b.slug}</option>
                                         ))}
                                     </select>
                                 </div>

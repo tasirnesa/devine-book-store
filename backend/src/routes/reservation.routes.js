@@ -11,6 +11,7 @@ router.put('/:id/cancel', protect, reservationController.cancelReservation);
 
 // Admin-only routes
 router.get('/admin', protect, requireRole('ADMIN'), reservationController.getAdminReservations);
+router.get('/admin/pending-count', protect, requireRole('ADMIN'), reservationController.getPendingCount);
 router.post('/:id/fulfill', protect, requireRole('ADMIN'), reservationController.fulfillReservation);
 
 module.exports = router;

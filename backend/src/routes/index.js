@@ -11,6 +11,8 @@ router.use('/authors', require('./author.routes'));
 router.use('/admin', require('./admin.routes'));
 router.use('/admin/borrow', require('./borrow.routes'));
 router.use('/reservations', require('./reservation.routes'));
+router.use('/notifications', require('./notification.routes'));
+router.use('/favorites', require('./favorite.routes'));
 
 // API health check
 router.get('/health', (req, res) => {

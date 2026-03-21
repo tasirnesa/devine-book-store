@@ -1,5 +1,6 @@
 const { PrismaClient } = require('@prisma/client');
 const prisma = new PrismaClient();
+const notificationService = require('./notification.service');
 
 /**
  * Create a new reservation
@@ -117,6 +118,13 @@ const notifyReservations = async (bookId) => {
         data: { status: 'NOTIFIED' }
     });
 
+    await notificationService.createNotification(
+        topReservation.userId,
+        'RESERVATION_READY',
+        `The book "${topReservation.book.translations[0]?.title || topReservation.book.slug}" is now available for pickup!`,
+        '/dashboard?tab=reservations'
+    );
+
     return topReservation;
 };
 
@@ -177,7 +185,28 @@ const fulfillReservation = async (reservationId, dueDate) => {
             data: { status: 'COMPLETED' }
         });
 
+        // 3. Create notification for the user
+        await notificationService.createNotification(
+            reservation.userId,
+            'RESERVATION_APPROVED',
+            `Your reservation for "${reservation.book.translations[0]?.title || reservation.book.slug}" has been approved!`,
+            '/dashboard?tab=loans'
+        );
+
         return borrowing;
+    });
+};
+
+/**
+ * Get count of pending and notified reservations (Admin only)
+ */
+const getPendingReservationsCount = async () => {
+    return await prisma.reservation.count({
+        where: {
+            status: {
+                in: ['PENDING', 'NOTIFIED']
+            }
+        }
     });
 };
 
@@ -188,4 +217,5 @@ module.exports = {
     notifyReservations,
     getAdminReservations,
     fulfillReservation,
+    getPendingReservationsCount,
 };

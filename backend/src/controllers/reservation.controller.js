@@ -84,10 +84,24 @@ const fulfillReservation = async (req, res) => {
     }
 };
 
+/**
+ * Handle fetching pending reservations count
+ */
+const getPendingCount = async (req, res) => {
+    try {
+        const count = await reservationService.getPendingReservationsCount();
+        res.status(200).json({ success: true, data: { count } });
+    } catch (error) {
+        logger.error(`Get Pending Count Error: ${error.message}`);
+        res.status(500).json({ message: 'Failed to fetch count' });
+    }
+};
+
 module.exports = {
     createReservation,
     getUserReservations,
     cancelReservation,
     getAdminReservations,
     fulfillReservation,
+    getPendingCount,
 };

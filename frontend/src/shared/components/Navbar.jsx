@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSelector, useDispatch } from 'react-redux';
@@ -6,6 +6,10 @@ import { logout } from '../../features/auth/authSlice';
 import { setFilters } from '../../features/books/bookSlice';
 import LanguageSwitcher from '../../features/languages/components/LanguageSwitcher';
 import { User, Bookmark, Search, ChevronDown, MapPin, Shield } from 'lucide-react';
+import axiosInstance from '../services/axiosInstance';
+
+import AdminNotificationBell from './AdminNotificationBell';
+import UserNotificationBell from './UserNotificationBell';
 
 const Navbar = () => {
     const { t } = useTranslation();
@@ -14,6 +18,27 @@ const Navbar = () => {
     const { isAuthenticated, user } = useSelector((state) => state.auth);
     const { filters } = useSelector((state) => state.books);
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
+    const [favoriteCount, setFavoriteCount] = useState(0);
+
+    React.useEffect(() => {
+        const fetchFavoriteCount = async () => {
+            if (isAuthenticated) {
+                try {
+                    const response = await axiosInstance.get('/favorites');
+                    setFavoriteCount(response.data.data?.length || 0);
+                } catch (error) {
+                    console.error('Failed to fetch favorite count', error);
+                }
+            } else {
+                setFavoriteCount(0);
+            }
+        };
+        fetchFavoriteCount();
+
+        const handleFavoriteUpdate = () => fetchFavoriteCount();
+        window.addEventListener('favoriteUpdated', handleFavoriteUpdate);
+        return () => window.removeEventListener('favoriteUpdated', handleFavoriteUpdate);
+    }, [isAuthenticated]);
 
     const handleLogout = () => {
         dispatch(logout());
@@ -57,6 +82,16 @@ const Navbar = () => {
 
                 {/* Actions Section */}
                 <div className="flex items-center space-x-6 shrink-0">
+                    {/* Admin Notification Bell */}
+                    {isAuthenticated && user?.role === 'ADMIN' && (
+                        <AdminNotificationBell />
+                    )}
+
+                    {/* User Notification Bell */}
+                    {isAuthenticated && user?.role === 'USER' && (
+                        <UserNotificationBell />
+                    )}
+
                     <div className="hidden xl:flex items-center gap-2">
                         <MapPin size={24} className="text-bam-navy" />
                     </div>
@@ -99,7 +134,11 @@ const Navbar = () => {
                     <Link to="/saved" className="flex flex-col items-center text-bam-navy hover:text-bam-red transition-colors group">
                         <div className="relative">
                             <Bookmark size={26} strokeWidth={1.5} />
-                            <span className="absolute -top-1.5 -right-2 bg-bam-red text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center">0</span>
+                            {favoriteCount > 0 && (
+                                <span className="absolute -top-1.5 -right-2 bg-bam-red text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center animate-in zoom-in">
+                                    {favoriteCount}
+                                </span>
+                            )}
                         </div>
                         <span className="text-[10px] font-bold uppercase tracking-widest mt-0.5 group-hover:underline underline-offset-2 decoration-2 decoration-bam-red">{t('nav.saved')}</span>
                     </Link>
