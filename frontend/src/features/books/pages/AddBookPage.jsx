@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import { Save, X, Upload, Plus, Trash2, Info, Image as ImageIcon } from 'lucide-react';
+import { Save, X, Upload, Plus, Trash2, Info, Image as ImageIcon, Filter } from 'lucide-react';
 import axiosInstance from '../../../shared/services/axiosInstance';
 import Loader from '../../../shared/components/Loader';
 
@@ -19,9 +19,11 @@ const BookForm = () => {
         title: '',
         description: '',
         categoryIds: [],
-        cover: null
+        cover: null,
+        file: null
     });
     const [preview, setPreview] = useState(null);
+    const [fileInfo, setFileInfo] = useState(null);
 
     useEffect(() => {
         const fetchData = async () => {
@@ -78,6 +80,17 @@ const BookForm = () => {
         }
     };
 
+    const handleBookFileChange = (e) => {
+        const file = e.target.files[0];
+        if (file) {
+            setFormData(prev => ({ ...prev, file: file }));
+            setFileInfo({
+                name: file.name,
+                size: (file.size / (1024 * 1024)).toFixed(2) + ' MB'
+            });
+        }
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSaving(true);
@@ -85,22 +98,26 @@ const BookForm = () => {
         const data = new FormData();
         Object.keys(formData).forEach(key => {
             if (key === 'categoryIds') {
-                formData[key].forEach(id => data.append('categoryIds[]', id));
+                // Send as 'categories' matching what the backend validator expects
+                formData[key].forEach(catId => data.append('categories[]', catId));
             } else if (key === 'cover' && formData[key]) {
                 data.append('cover', formData[key]);
+            } else if (key === 'file' && formData[key]) {
+                data.append('file', formData[key]);
             } else if (formData[key]) {
                 data.append(key, formData[key]);
             }
         });
 
-        // Add default language for the first translation
-        data.append('languageCode', 'en');
+        // Language ID 1 = English (default)
+        data.append('languageId', 1);
 
         try {
+            const config = { headers: { 'Content-Type': undefined } };
             if (isEdit) {
-                await axiosInstance.put(`/books/${id}`, data);
+                await axiosInstance.put(`/books/${id}`, data, config);
             } else {
-                await axiosInstance.post('/books', data);
+                await axiosInstance.post('/books', data, config);
             }
             navigate('/admin/books');
         } catch (err) {
@@ -160,6 +177,33 @@ const BookForm = () => {
                             )}
                         </div>
                         <p className="text-[9px] text-gray-400 mt-3 italic">Recommended: 300x400px, JPEG or PNG</p>
+                    </div>
+
+                    <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">
+                        <h3 className="text-xs font-black text-bam-navy uppercase tracking-widest mb-4 flex items-center gap-2">
+                            <Upload size={14} className="text-bam-red" />
+                            Manuscript File
+                        </h3>
+                        <div className="relative p-4 rounded-2xl bg-gray-50 border-2 border-dashed border-gray-200 hover:border-bam-red transition-colors cursor-pointer group">
+                            <input
+                                type="file"
+                                className="absolute inset-0 opacity-0 cursor-pointer"
+                                onChange={handleBookFileChange}
+                                accept=".pdf,.epub"
+                            />
+                            {fileInfo ? (
+                                <div className="space-y-1">
+                                    <p className="text-[10px] font-bold text-bam-navy truncate">{fileInfo.name}</p>
+                                    <p className="text-[9px] text-gray-400 uppercase tracking-tighter">{fileInfo.size}</p>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center py-2">
+                                    <Upload size={20} className="text-gray-300 mb-2" />
+                                    <p className="text-[9px] font-black uppercase tracking-widest text-gray-400">Upload PDF/EPUB</p>
+                                </div>
+                            )}
+                        </div>
+                        <p className="text-[9px] text-gray-400 mt-3 italic">Max size: 50MB</p>
                     </div>
 
                     <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100">

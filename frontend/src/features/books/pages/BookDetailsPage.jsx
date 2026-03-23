@@ -275,8 +275,8 @@ const BookDetailsPage = () => {
                                 </button>
                             )}
 
-                            {/* Physical Reservation Button */}
-                            {book.quantity === 0 && (
+                            {/* Physical Reservation Button — always show for authenticated users */}
+                            {isAuthenticated && (
                                 <button 
                                     onClick={handleReserve}
                                     disabled={reserving}

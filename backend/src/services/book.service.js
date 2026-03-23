@@ -130,20 +130,41 @@ exports.incrementViews = async (id) => {
 
 /**
  * Create a book
+ * Handles both flat fields (title, description, authorName, languageId)
+ * sent from FormData and a nested translations array.
  */
-exports.createBook = async (data, file) => {
-    const { translations, categories, title, description, ...rest } = data;
+exports.createBook = async (data, cover, file) => {
+    // Destructure ALL non-Book-model fields to prevent them leaking into ...rest
+    const { translations, categories, title, description, authorName, languageId, ...rest } = data;
 
-    // Generate slug if not provided
-    const finalSlug = rest.slug || slugify(title || (translations && translations[0]?.title) || 'book', { lower: true, strict: true });
+    // Generate slug if not provided — suffix with timestamp to ensure uniqueness
+    const baseSlug = rest.slug
+        ? slugify(rest.slug, { lower: true, strict: true })
+        : slugify(title || (translations && translations[0]?.title) || 'book', { lower: true, strict: true });
+
+    // Check if slug already exists and append timestamp if needed
+    const existingSlug = await prisma.book.findUnique({ where: { slug: baseSlug } });
+    const finalSlug = existingSlug ? `${baseSlug}-${Date.now()}` : baseSlug;
+
+    // Build translations: prefer explicit array, fall back to flat fields
+    let finalTranslations = translations || [];
+    if (finalTranslations.length === 0 && (title || description || authorName)) {
+        finalTranslations = [{
+            languageId: parseInt(languageId) || 1,
+            title: title || '',
+            description: description || '',
+            authorName: authorName || ''
+        }];
+    }
 
     const book = await prisma.book.create({
         data: {
             ...rest,
             slug: finalSlug,
-            coverUrl: file ? `/uploads/covers/${file.filename}` : rest.coverUrl,
+            coverUrl: cover ? `/uploads/covers/${cover.filename}` : (rest.coverUrl || null),
+            fileUrl: file ? `/uploads/manuscripts/${file.filename}` : (rest.fileUrl || null),
             translations: {
-                create: (translations || []).map(t => ({
+                create: finalTranslations.map(t => ({
                     languageId: t.languageId,
                     title: t.title,
                     description: t.description,
@@ -162,7 +183,7 @@ exports.createBook = async (data, file) => {
         }
     });
 
-    // Format for frontend (matches getBooks logic)
+    // Re-fetch formatted for frontend
     const formattedBook = await prisma.book.findUnique({
         where: { id: book.id },
         include: {
@@ -187,8 +208,9 @@ exports.createBook = async (data, file) => {
 /**
  * Update a book
  */
-exports.updateBook = async (id, data, file) => {
-    const { translations, categories, title, description, ...rest } = data;
+exports.updateBook = async (id, data, cover, file) => {
+    // Destructure ALL non-Book-model fields to prevent them leaking into ...rest
+    const { translations, categories, title, description, authorName, languageId, ...rest } = data;
     const bookId = parseInt(id);
 
     // Update base fields
@@ -196,14 +218,26 @@ exports.updateBook = async (id, data, file) => {
         where: { id: bookId },
         data: {
             ...rest,
-            ...(file ? { coverUrl: `/uploads/covers/${file.filename}` } : {}),
+            ...(cover ? { coverUrl: `/uploads/covers/${cover.filename}` } : {}),
+            ...(file ? { fileUrl: `/uploads/manuscripts/${file.filename}` } : {}),
             publishedAt: rest.publishedAt ? new Date(rest.publishedAt) : undefined,
         }
     });
 
-    // Update translations
-    if (translations) {
-        for (const t of translations) {
+    // Build translations: prefer explicit array, fall back to flat fields
+    let finalTranslations = translations || [];
+    if (finalTranslations.length === 0 && (title || description || authorName)) {
+        finalTranslations = [{
+            languageId: parseInt(languageId) || 1,
+            title: title || '',
+            description: description || '',
+            authorName: authorName || ''
+        }];
+    }
+
+    // Upsert translations
+    if (finalTranslations.length > 0) {
+        for (const t of finalTranslations) {
             await prisma.bookTranslation.upsert({
                 where: {
                     bookId_languageId: {
@@ -227,7 +261,7 @@ exports.updateBook = async (id, data, file) => {
         }
     }
 
-    // Update categories (simple overwrite for now)
+    // Overwrite categories if provided
     if (categories) {
         await prisma.categoryOnBook.deleteMany({ where: { bookId } });
         await prisma.categoryOnBook.createMany({
@@ -238,7 +272,7 @@ exports.updateBook = async (id, data, file) => {
         });
     }
 
-    // Return the updated book (fetch by ID to be safe)
+    // Return updated, formatted book
     const updatedBook = await prisma.book.findUnique({
         where: { id: bookId },
         include: {
@@ -252,7 +286,6 @@ exports.updateBook = async (id, data, file) => {
         }
     });
 
-    // Format for frontend (matches getBooks logic)
     if (updatedBook) {
         updatedBook.activeTranslation = updatedBook.translations[0];
         updatedBook.categories = updatedBook.categories.map(c => c.category);

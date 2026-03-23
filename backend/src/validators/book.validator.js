@@ -1,9 +1,11 @@
 const Joi = require('joi');
 
 exports.createBookSchema = Joi.object({
-    title: Joi.string().max(255).required(),
+    title: Joi.string().max(255).optional(),
     slug: Joi.string().max(255).optional(),
     description: Joi.string().optional(),
+    authorName: Joi.string().optional(),
+    languageId: Joi.number().integer().optional(),
     coverUrl: Joi.string().optional(),
     fileUrl: Joi.string().optional(),
     externalUrl: Joi.string().optional(),
@@ -26,6 +28,8 @@ exports.createBookSchema = Joi.object({
 exports.updateBookSchema = Joi.object({
     title: Joi.string().max(255).optional(),
     description: Joi.string().optional(),
+    authorName: Joi.string().optional(),
+    languageId: Joi.number().integer().optional(),
     coverUrl: Joi.string().optional(),
     fileUrl: Joi.string().optional(),
     externalUrl: Joi.string().optional(),

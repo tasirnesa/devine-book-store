@@ -48,7 +48,9 @@ exports.getBookBySlug = async (req, res, next) => {
 // POST /api/books  [admin only]
 exports.createBook = async (req, res, next) => {
     try {
-        const book = await bookService.createBook(req.body, req.file);
+        const cover = req.files?.cover?.[0];
+        const file = req.files?.file?.[0];
+        const book = await bookService.createBook(req.body, cover, file);
         return success(res, book, 'Book created successfully', 201);
     } catch (err) {
         next(err);
@@ -58,7 +60,9 @@ exports.createBook = async (req, res, next) => {
 // PUT /api/books/:id  [admin only]
 exports.updateBook = async (req, res, next) => {
     try {
-        const book = await bookService.updateBook(req.params.id, req.body, req.file);
+        const cover = req.files?.cover?.[0];
+        const file = req.files?.file?.[0];
+        const book = await bookService.updateBook(req.params.id, req.body, cover, file);
         if (!book) return error(res, 'Book not found', 404);
         return success(res, book, 'Book updated successfully');
     } catch (err) {

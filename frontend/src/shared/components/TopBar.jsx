@@ -7,7 +7,7 @@ const TopBar = () => {
 
     return (
         <div className="bg-white border-b border-gray-100 py-2 hidden md:block">
-            <div className="container mx-auto px-4 flex justify-between items-center text-[11px] font-medium text-bam-navy uppercase tracking-wider">
+            {/* <div className="container mx-auto px-4 flex justify-between items-center text-[11px] font-medium text-bam-navy uppercase tracking-wider">
                 <div className="flex items-center gap-4">
                     <button className="flex items-center gap-1.5 hover:text-bam-red transition-colors">
                         <MapPin size={12} className="text-gray-400" />
@@ -34,7 +34,7 @@ const TopBar = () => {
                         Millionaire's Club
                     </a>
                 </div>
-            </div>
+            </div> */}
         </div>
     );
 };

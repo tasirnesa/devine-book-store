@@ -156,7 +156,17 @@ const getAdminReservations = async () => {
 const fulfillReservation = async (reservationId, dueDate) => {
     const reservation = await prisma.reservation.findUnique({
         where: { id: parseInt(reservationId) },
-        include: { user: true, book: true }
+        include: { 
+            user: true, 
+            book: {
+                include: {
+                    translations: {
+                        where: { language: { code: 'en' } },
+                        take: 1
+                    }
+                }
+            }
+        }
     });
 
     if (!reservation) {
