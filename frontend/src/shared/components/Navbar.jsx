@@ -1,26 +1,28 @@
 import React, { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useSelector, useDispatch } from 'react-redux';
 import { logout } from '../../features/auth/authSlice';
 import { setFilters } from '../../features/books/bookSlice';
 import LanguageSwitcher from '../../features/languages/components/LanguageSwitcher';
-import { User, Bookmark, Search, ChevronDown, MapPin, Shield } from 'lucide-react';
+import { User, Bookmark, Search, ShoppingBag, Globe, Shield, Command } from 'lucide-react';
 import axiosInstance from '../services/axiosInstance';
 
 import AdminNotificationBell from './AdminNotificationBell';
 import UserNotificationBell from './UserNotificationBell';
 
 const Navbar = () => {
-    const { t } = useTranslation();
+    const { t, i18n } = useTranslation();
     const dispatch = useDispatch();
     const navigate = useNavigate();
+    const location = useLocation();
     const { isAuthenticated, user } = useSelector((state) => state.auth);
     const { filters } = useSelector((state) => state.books);
     const [searchTerm, setSearchTerm] = useState(filters.search || '');
     const [favoriteCount, setFavoriteCount] = useState(0);
+    const [isSearchOpen, setIsSearchOpen] = useState(false);
 
-    React.useEffect(() => {
+    useEffect(() => {
         const fetchFavoriteCount = async () => {
             if (isAuthenticated) {
                 try {
@@ -48,108 +50,121 @@ const Navbar = () => {
     const handleSearch = (e) => {
         e.preventDefault();
         dispatch(setFilters({ search: searchTerm }));
+        setIsSearchOpen(false);
         navigate('/books');
     };
 
+    const navLinks = [
+        { name: t('nav.books') || 'BOOKS', path: '/books' },
+        { name: t('nav.about') || 'ABOUT', path: '/about' },
+        { name: t('nav.journal') || 'JOURNAL', path: '/journal' }
+    ];
+
     return (
-        <nav className="bg-white text-bam-navy border-b border-gray-100 shadow-sm sticky top-0 z-50">
-            <div className="container mx-auto px-4 py-3 flex items-center justify-between gap-8 h-20">
-                {/* Logo Section */}
-                <Link to="/" className="flex flex-col items-center shrink-0">
-                    <span className="text-3xl lg:text-4xl font-black text-bam-navy leading-none tracking-tighter uppercase">{t('common.app_name')}</span>
-                    <span className="text-[10px] font-bold text-bam-navy tracking-[0.2em] leading-tight uppercase">Kuusaa Macaafaaa</span>
+        <nav className="bg-slate-50/50 text-slate-800 border-b border-slate-100 sticky top-0 z-50 backdrop-blur-md">
+            <div className="container mx-auto px-6 h-20 flex items-center justify-between">
+                
+                {/* Logo Section - Left */}
+                <Link to="/" className="flex items-center gap-3 group shrink-0">
+                    <div className="text-sky-500 group-hover:text-bam-red transition-colors">
+                        <Command size={32} strokeWidth={1.5} />
+                    </div>
+                    <span className="text-lg font-medium tracking-tight text-slate-900">Christian Focus</span>
                 </Link>
 
-                {/* Search Bar Section */}
-                <form
-                    onSubmit={handleSearch}
-                    className="flex-grow max-w-2xl hidden md:flex items-center bg-white border-2 border-bam-navy rounded shadow-sm overflow-hidden"
-                >
-                    <button type="button" className="bg-gray-50 px-4 h-11 flex items-center gap-2 border-r border-gray-200 text-sm font-bold hover:bg-gray-100 transition-colors">
-                        <ChevronDown size={14} />
-                    </button>
-                    <input
-                        type="text"
-                        placeholder={t('common.search_placeholder')}
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="flex-grow px-4 py-2 border-none focus:ring-0 text-sm font-medium placeholder-gray-400"
-                    />
-                    <button type="submit" className="bg-bam-navy text-white px-5 h-11 flex items-center justify-center hover:bg-opacity-90 transition-all">
-                        <Search size={22} />
-                    </button>
-                </form>
-
-                {/* Actions Section */}
-                <div className="flex items-center space-x-6 shrink-0">
-                    {/* Admin Notification Bell */}
-                    {isAuthenticated && user?.role === 'ADMIN' && (
-                        <AdminNotificationBell />
-                    )}
-
-                    {/* User Notification Bell */}
-                    {isAuthenticated && user?.role === 'USER' && (
-                        <UserNotificationBell />
-                    )}
-
-                    <div className="hidden xl:flex items-center gap-2">
-                        <MapPin size={24} className="text-bam-navy" />
-                    </div>
-
-                    {isAuthenticated ? (
-                        <div className="flex items-center space-x-6">
-                            {/* Unified Dashboard Link */}
+                {/* Right Side Section: Nav Links + Icons */}
+                <div className="flex items-center gap-10">
+                    {/* Navigation Links (Right Aligned) */}
+                    <div className="hidden lg:flex items-center gap-10">
+                        {navLinks.map((link) => (
                             <Link 
-                                to={user?.role === 'ADMIN' ? '/admin' : '/profile'} 
-                                className={`flex flex-col items-center transition-colors ${
-                                    user?.role === 'ADMIN' ? 'text-bam-red hover:text-bam-navy' : 'text-bam-navy hover:text-bam-red'
+                                key={link.path} 
+                                to={link.path}
+                                className={`text-[10px] font-black uppercase tracking-[0.2em] transition-all hover:text-sky-500 ${
+                                    location.pathname === link.path ? 'text-sky-500' : 'text-slate-500'
                                 }`}
                             >
-                                {user?.role === 'ADMIN' ? (
-                                    <Shield size={26} strokeWidth={1.5} className="text-bam-red" />
-                                ) : (
-                                    <User size={26} strokeWidth={1.5} />
-                                )}
-                                <span className="text-[10px] font-black uppercase tracking-widest mt-0.5">
-                                    {user?.role === 'ADMIN' ? t('nav.admin') : user?.name?.split(' ')[0]}
-                                </span>
+                                {link.name}
                             </Link>
+                        ))}
+                    </div>
 
-                            <button
-                                onClick={handleLogout}
-                                className="flex flex-col items-center text-bam-navy hover:text-bam-red transition-colors"
-                                title="Logout"
-                            >
-                                <User size={26} strokeWidth={1.5} className="rotate-180" />
-                                <span className="text-[10px] font-bold uppercase tracking-widest mt-0.5">{t('nav.sign_out') || 'Sign Out'}</span>
-                            </button>
-                        </div>
-                    ) : (
-                        <Link to="/login" className="flex flex-col items-center text-bam-navy hover:text-bam-red transition-colors group">
-                            <User size={26} strokeWidth={1.5} />
-                            <span className="text-[10px] font-bold uppercase tracking-widest mt-0.5 group-hover:underline underline-offset-2 decoration-2 decoration-bam-red">{t('nav.sign_in')}</span>
-                        </Link>
-                    )}
+                    {/* Icons Section */}
+                    <div className="flex items-center gap-6 border-l border-slate-200 pl-8 ml-2">
+                        {/* Search Icon */}
+                        <button 
+                            onClick={() => setIsSearchOpen(true)}
+                            className="text-slate-500 hover:text-slate-900 transition-colors"
+                        >
+                            <Search size={22} strokeWidth={1.5} />
+                        </button>
 
-                    <Link to="/saved" className="flex flex-col items-center text-bam-navy hover:text-bam-red transition-colors group">
-                        <div className="relative">
-                            <Bookmark size={26} strokeWidth={1.5} />
-                            {favoriteCount > 0 && (
-                                <span className="absolute -top-1.5 -right-2 bg-bam-red text-white text-[9px] font-bold w-4 h-4 rounded-full flex items-center justify-center animate-in zoom-in">
+                        {/* Shopping Bag (Saved Books) */}
+                        <Link to="/saved" className="relative group text-slate-500 hover:text-slate-900 transition-colors">
+                            <ShoppingBag size={22} strokeWidth={1.5} />
+                            {favoriteCount >= 0 && (
+                                <span className="absolute -top-1.5 -right-1.5 bg-sky-500 text-white text-[8px] font-black w-3.5 h-3.5 rounded-full flex items-center justify-center border border-white">
                                     {favoriteCount}
                                 </span>
                             )}
+                        </Link>
+
+                        {/* User Profile with Text */}
+                        <div className="flex flex-col items-center">
+                            <Link 
+                                to={isAuthenticated ? (user?.role === 'ADMIN' ? '/admin' : '/profile') : '/login'}
+                                className="flex flex-col items-center gap-0.5 group"
+                            >
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest group-hover:text-slate-900 transition-colors">
+                                    {isAuthenticated ? (user?.name?.split(' ')[0] || 'USER') : 'SIGN IN'}
+                                </span>
+                                <User size={22} strokeWidth={1.5} className="text-slate-500 group-hover:text-slate-900 transition-colors" />
+                            </Link>
                         </div>
-                        <span className="text-[10px] font-bold uppercase tracking-widest mt-0.5 group-hover:underline underline-offset-2 decoration-2 decoration-bam-red">{t('nav.saved')}</span>
-                    </Link>
 
-                    <div className="h-10 w-[1px] bg-gray-100 hidden sm:block"></div>
+                        {/* Language Switcher with Text */}
+                        <div className="flex flex-col items-center">
+                            <div className="flex flex-col items-center gap-0.5 group cursor-pointer">
+                                <span className="text-[9px] font-black text-slate-400 uppercase tracking-widest group-hover:text-slate-900 transition-colors">
+                                    {i18n.language.toUpperCase() === 'EN' ? 'ROM' : i18n.language.toUpperCase()}
+                                </span>
+                                <Globe size={22} strokeWidth={1.5} className="text-slate-500 group-hover:text-slate-900 transition-colors" />
+                            </div>
+                        </div>
 
-                    <div className="hidden sm:block">
-                        <LanguageSwitcher />
+                        {/* Notifications (Optional / If needed) */}
+                        {(isAuthenticated && (user?.role === 'ADMIN' || user?.role === 'USER')) && (
+                            <div className="ml-2">
+                                {user?.role === 'ADMIN' ? <AdminNotificationBell /> : <UserNotificationBell />}
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
+
+            {/* Search Overlay (Functional) */}
+            {isSearchOpen && (
+                <div className="absolute inset-x-0 top-0 h-20 bg-white z-[60] flex items-center px-10 border-b border-slate-100 animate-in slide-in-from-top duration-300">
+                    <form onSubmit={handleSearch} className="container mx-auto flex items-center gap-6">
+                        <Search size={22} className="text-slate-400" />
+                        <input 
+                            autoFocus
+                            type="text" 
+                            placeholder="Search archives..."
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            className="flex-grow bg-transparent border-none focus:ring-0 text-lg font-medium placeholder-slate-300"
+                        />
+                        <button 
+                            type="button" 
+                            onClick={() => setIsSearchOpen(false)}
+                            className="text-[10px] font-black uppercase tracking-widest text-slate-400 hover:text-slate-900"
+                        >
+                            Esc
+                        </button>
+                    </form>
+                </div>
+            )}
         </nav>
     );
 };

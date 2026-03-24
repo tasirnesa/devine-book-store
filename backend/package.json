@@ -4,7 +4,7 @@
     "description": "Express.js backend for the Spiritual Book Library",
     "main": "src/server.js",
     "scripts": {
-        "start": "node src/server.js",
+        "start": "nodemon src/server.js",
         "dev": "nodemon src/server.js",
         "db:migrate": "npx sequelize-cli db:migrate",
         "db:seed": "npx sequelize-cli db:seed:all",

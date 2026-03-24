@@ -22,6 +22,8 @@ import AdminSettingsPage from '../features/admin/pages/AdminSettingsPage';
 import AddBookPage from '../features/books/pages/AddBookPage';
 import BookReaderPage from '../features/books/pages/BookReaderPage';
 import SavedBooksPage from '../features/books/pages/SavedBooksPage';
+import AboutPage from '../features/books/pages/AboutPage';
+import JournalPage from '../features/books/pages/JournalPage';
 
 const AppRoutes = () => {
     return (
@@ -33,6 +35,8 @@ const AppRoutes = () => {
                 <Route path="/books/:slug" element={<BookDetailsPage />} />
                 <Route path="/saved" element={<SavedBooksPage />} />
                 <Route path="/books/:slug/read" element={<BookReaderPage />} />
+                <Route path="/about" element={<AboutPage />} />
+                <Route path="/journal" element={<JournalPage />} />
             </Route>
 
             <Route path="/login" element={<LoginPage />} />

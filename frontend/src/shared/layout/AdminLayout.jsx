@@ -1,6 +1,6 @@
 import React from 'react';
 import { Outlet, Link, useLocation } from 'react-router-dom';
-import Navbar from '../components/Navbar';
+import AdminNavbar from '../components/AdminNavbar';
 import Footer from '../components/Footer';
 import { LayoutDashboard, Book, Users, Settings, LogOut, ChevronLeft } from 'lucide-react';
 
@@ -24,7 +24,7 @@ const AdminLayout = () => {
 
     return (
         <div className="min-h-screen flex flex-col bg-gray-50/50">
-            <Navbar />
+            <AdminNavbar />
             <div className="flex-grow flex container mx-auto px-4 py-8 gap-8">
                 {/* Admin Sidebar */}
                 <aside className="w-72 shrink-0 hidden lg:block">
